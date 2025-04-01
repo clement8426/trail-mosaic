@@ -1,73 +1,71 @@
-# Welcome to your Lovable project
+Voici un modèle de **README** pour expliquer le principe de l’application. Ce document présente clairement les fonctionnalités et la philosophie de l’application pour les utilisateurs et les développeurs qui pourraient être intéressés par le projet.
 
-## Project info
+---
 
-**URL**: https://lovable.dev/projects/ce48a30e-febe-4db5-88a4-a9c6b914756f
+# VTT Spots - Application Communautaire pour le VTT, Dirt Freestyle et Downhill
 
-## How can I edit this code?
+**VTT Spots** est une application mobile et web dédiée aux passionnés de VTT, Dirt Freestyle et Downhill. Elle permet aux utilisateurs de découvrir, partager et créer des spots communautaires, tout en ayant la possibilité de proposer et organiser des sessions avec d'autres riders. Grâce à un système de contributions collaboratives, chaque spot peut être modifié, mis à jour et amélioré par la communauté des utilisateurs.
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## Table des matières
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ce48a30e-febe-4db5-88a4-a9c6b914756f) and start prompting.
+- [Introduction](#introduction)
+- [Fonctionnalités](#fonctionnalités)
+  - [Page de Connexion et Inscription](#page-de-connexion-et-inscription)
+  - [Création de Spot Communautaire](#création-de-spot-communautaire)
+  - [Page de Détails de Spot](#page-de-détails-de-spot)
+  - [Notifications et Session](#notifications-et-session)
+  - [Système de Modération et Sécurité](#système-de-modération-et-sécurité)
+  - [Page de Profil Utilisateur](#page-de-profil-utilisateur)
+- [Technologies Utilisées](#technologies-utilisées)
+- [Installation](#installation)
+- [Contribution](#contribution)
+- [Licence](#licence)
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## Introduction
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+VTT Spots est une plateforme collaborative qui permet aux utilisateurs de partager des spots de VTT, Dirt Freestyle et Downhill. Chaque spot peut être enrichi, mis à jour et commenté par la communauté. De plus, les utilisateurs peuvent organiser des sessions de ride en fonction des spots favoris et voter pour participer à ces événements.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Les utilisateurs peuvent aussi se connecter via Google, proposer des modifications sur des spots, et recevoir des notifications pour rester informés des événements, des sessions proposées, et des mises à jour des spots qu’ils suivent.
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Fonctionnalités
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Page de Connexion et Inscription
+- Connexion rapide via un compte Google.
+- Inscription par email avec mot de passe.
+- Récupération du mot de passe si oublié.
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Création de Spot Communautaire
+- **Création de spots** : Les utilisateurs peuvent ajouter de nouveaux spots en remplissant un formulaire avec des informations telles que :
+  - Nom du spot
+  - Localisation sur une carte
+  - Description détaillée du terrain, des obstacles, et des caractéristiques du spot
+  - Types de parcours : descente, bosses, tricks, etc.
+  - Type de vélo compatible : BMX, semi-rigide, tout suspendu
+  - Photos et vidéos du spot pour le mettre en valeur.
+  
+- **Modification collaborative** : Les utilisateurs peuvent proposer des modifications aux spots existants (comme ajouter des photos, corriger des informations ou améliorer la description). Ces propositions sont soumises à un vote ou à une validation de la communauté.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### Page de Détails de Spot
+- Affichage des informations détaillées du spot, y compris les commentaires des utilisateurs et les évaluations par étoiles.
+- Liste des utilisateurs ayant contribué au spot, avec un historique des contributions (ajout de photos, modifications, commentaires).
+- **Propositions de Sessions** : Les utilisateurs peuvent organiser des sessions pour un spot donné et inviter d'autres riders à y participer. Ces propositions peuvent être votées par la communauté.
 
-**Edit a file directly in GitHub**
+### Notifications et Session
+- **Notifications** : Les utilisateurs reçoivent des notifications lorsqu’un spot qu'ils suivent a des mises à jour, lorsqu’une session est organisée, ou lorsqu'un événement lié à un spot favori est proposé.
+- **Voter pour participer** : Les utilisateurs peuvent indiquer leur intérêt pour une session en votant pour participer ou en s'inscrivant à un événement.
+- **Spot Favoris** : Si un utilisateur ajoute un spot à ses favoris, il recevra des notifications lorsqu'un événement est organisé sur ce spot.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Système de Modération et Sécurité
+- **Validation des Contributions** : Les ajouts ou modifications de spots par les utilisateurs sont validés avant d’être publiés sur la plateforme. Les contributions peuvent être votées ou examinées par la communauté pour s’assurer qu’elles respectent les règles.
+- **Signalement de contenu inapproprié** : Les utilisateurs peuvent signaler des informations incorrectes ou des commentaires inappropriés, qui seront examinés par les administrateurs.
 
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/ce48a30e-febe-4db5-88a4-a9c6b914756f) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes it is!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Page de Profil Utilisateur
+- Affichage des spots ajoutés, modifiés, ou commentés par l’utilisateur.
+- Accès aux spots favoris, et historique des événements et sessions auxquelles l’utilisateur a participé.
+- Tableau de bord pour suivre les sessions à venir et les nouvelles notifications.

@@ -37,3 +37,12 @@ export interface Event {
   category: 'Compétition' | 'Rassemblement' | 'Formation';
   trailId?: string; // Optional reference to a trail
 }
+
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  photoURL?: string;
+  createdAt: string;
+  favorites: string[]; // Trail IDs
+}

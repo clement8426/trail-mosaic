@@ -25,6 +25,42 @@ export interface Trail {
   obstacles: Obstacle[];
   rating: number; // out of 5
   reviews: number; // number of reviews
+  createdBy?: string; // ID of the user who created the trail
+  createdAt?: string; // Date of creation
+  contributors?: Contributor[]; // List of users who contributed to this trail
+  comments?: Comment[]; // List of comments
+  sessions?: Session[]; // List of ride sessions
+}
+
+export interface Contributor {
+  userId: string;
+  username: string;
+  action: 'created' | 'edited' | 'added_photo' | 'reported';
+  timestamp: string;
+  details?: string;
+}
+
+export interface Comment {
+  id: string;
+  userId: string;
+  username: string;
+  text: string;
+  timestamp: string;
+  rating?: number; // Optional rating between 1-5
+}
+
+export interface Session {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  createdBy: string;
+  participants: {
+    userId: string;
+    username: string;
+    status: 'going' | 'interested' | 'not_going';
+  }[];
 }
 
 export interface Event {
@@ -45,4 +81,34 @@ export interface User {
   photoURL?: string;
   createdAt: string;
   favorites: string[]; // Trail IDs
+  contributions?: Contributor[]; // Contributions made by user
+  notifications?: Notification[]; // Notifications for user
+}
+
+export interface Notification {
+  id: string;
+  type: 'session' | 'contribution' | 'comment' | 'favorite';
+  message: string;
+  timestamp: string;
+  read: boolean;
+  trailId?: string;
+  sessionId?: string;
+}
+
+export interface TrailModification {
+  id: string;
+  trailId: string;
+  userId: string;
+  username: string;
+  timestamp: string;
+  status: 'pending' | 'approved' | 'rejected';
+  changes: {
+    field: string;
+    oldValue: any;
+    newValue: any;
+  }[];
+  votes: {
+    userId: string;
+    vote: 'up' | 'down';
+  }[];
 }

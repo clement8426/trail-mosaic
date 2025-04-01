@@ -12,12 +12,14 @@ import { events } from '@/data/eventsData';
 import { BikeType, TrailType, DifficultyLevel } from '@/types';
 import TrailFilters from '@/components/TrailFilters';
 import TrailMap from '@/components/TrailMap';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const [selectedBikeType, setSelectedBikeType] = useState<BikeType>('Tous');
   const [selectedTrailType, setSelectedTrailType] = useState<TrailType | 'Tous'>('Tous');
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel | 'Tous'>('Tous');
   const [distanceRange, setDistanceRange] = useState<[number, number]>([0, 10]);
+  const { currentUser } = useAuth();
   
   // We'll show the first 3 trails for the featured section
   const featuredTrails = trails.slice(0, 3);
@@ -198,8 +200,14 @@ const Index = () => {
           <p className="text-white/80 max-w-2xl mx-auto mb-8">
             Créez un compte pour partager vos spots favoris, noter les pistes et participer aux événements.
           </p>
-          <Button size="lg" className="bg-trail hover:bg-trail-dark text-white">
-            S'inscrire maintenant
+          <Button 
+            size="lg" 
+            className="bg-trail hover:bg-trail-dark text-white"
+            asChild
+          >
+            <Link to={currentUser ? "/profile" : "/register"}>
+              {currentUser ? "Accéder à mon profil" : "S'inscrire maintenant"}
+            </Link>
           </Button>
         </div>
       </section>
@@ -221,23 +229,29 @@ const Index = () => {
                 <li><Link to="/map" className="hover:text-white">Carte</Link></li>
                 <li><Link to="/trails" className="hover:text-white">Pistes</Link></li>
                 <li><Link to="/events" className="hover:text-white">Événements</Link></li>
+                {!currentUser && (
+                  <>
+                    <li><Link to="/login" className="hover:text-white">Connexion</Link></li>
+                    <li><Link to="/register" className="hover:text-white">Inscription</Link></li>
+                  </>
+                )}
               </ul>
             </div>
             <div>
               <h4 className="text-white font-medium mb-4">Catégories</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white">Descente</a></li>
-                <li><a href="#" className="hover:text-white">Terrain de bosses</a></li>
-                <li><a href="#" className="hover:text-white">Bosses à tricks</a></li>
+                <li><Link to="/trails" className="hover:text-white">Descente</Link></li>
+                <li><Link to="/trails" className="hover:text-white">Terrain de bosses</Link></li>
+                <li><Link to="/trails" className="hover:text-white">Bosses à tricks</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-medium mb-4">Contact</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white">À propos</a></li>
-                <li><a href="#" className="hover:text-white">Conditions d'utilisation</a></li>
-                <li><a href="#" className="hover:text-white">Confidentialité</a></li>
-                <li><a href="#" className="hover:text-white">Support</a></li>
+                <li><Link to="/" className="hover:text-white">À propos</Link></li>
+                <li><Link to="/" className="hover:text-white">Conditions d'utilisation</Link></li>
+                <li><Link to="/" className="hover:text-white">Confidentialité</Link></li>
+                <li><Link to="/" className="hover:text-white">Support</Link></li>
               </ul>
             </div>
           </div>
@@ -273,9 +287,9 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ title, description, imageUr
             <Button 
               variant="outline" 
               className="border-white text-white hover:bg-white/20 w-full"
-              onClick={() => console.log(`View category: ${category}`)}
+              asChild
             >
-              Explorer
+              <Link to="/trails">Explorer</Link>
             </Button>
           </CardContent>
         </div>

@@ -1,12 +1,23 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Bike, Map, Calendar, Menu, X } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Bike, Map, Calendar, Menu, X, LogIn, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const { currentUser, logout } = useAuth();
+  const location = useLocation();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   return (
     <nav className="fixed top-0 inset-x-0 z-50 bg-white border-b border-gray-200">
@@ -20,7 +31,28 @@ const Navbar = () => {
           <NavLink to="/map" icon={<Map size={18} />} label="Carte" />
           <NavLink to="/trails" icon={<Bike size={18} />} label="Pistes" />
           <NavLink to="/events" icon={<Calendar size={18} />} label="Événements" />
-          <Button className="bg-trail hover:bg-trail-dark">S'inscrire</Button>
+          
+          {currentUser ? (
+            <>
+              <Button 
+                variant="ghost" 
+                className="text-gray-600 hover:text-forest-dark"
+                onClick={handleLogout}
+              >
+                Déconnexion
+              </Button>
+              <Button asChild className="bg-trail hover:bg-trail-dark">
+                <Link to="/profile">Mon Profil</Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/login" icon={<LogIn size={18} />} label="Connexion" />
+              <Button asChild className="bg-trail hover:bg-trail-dark">
+                <Link to="/register">S'inscrire</Link>
+              </Button>
+            </>
+          )}
         </div>
 
         <Button 
@@ -60,7 +92,46 @@ const Navbar = () => {
             onClick={() => setMobileMenuOpen(false)}
             mobile 
           />
-          <Button className="w-full bg-trail hover:bg-trail-dark mt-4">S'inscrire</Button>
+          
+          {currentUser ? (
+            <>
+              <NavLink 
+                to="/profile" 
+                label="Mon Profil" 
+                onClick={() => setMobileMenuOpen(false)}
+                mobile 
+              />
+              <Button 
+                className="w-full" 
+                variant="ghost"
+                onClick={() => {
+                  handleLogout();
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Déconnexion
+              </Button>
+            </>
+          ) : (
+            <>
+              <NavLink 
+                to="/login" 
+                icon={<LogIn size={20} />} 
+                label="Connexion" 
+                onClick={() => setMobileMenuOpen(false)}
+                mobile 
+              />
+              <Button 
+                asChild
+                className="w-full bg-trail hover:bg-trail-dark mt-4"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Link to="/register">
+                  S'inscrire
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </nav>
@@ -76,6 +147,9 @@ interface NavLinkProps {
 }
 
 const NavLink = ({ to, label, icon, mobile, onClick }: NavLinkProps) => {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  
   return (
     <Link 
       to={to} 
@@ -83,7 +157,9 @@ const NavLink = ({ to, label, icon, mobile, onClick }: NavLinkProps) => {
         "flex items-center gap-2 transition-colors",
         mobile 
           ? "text-lg py-3 border-b border-gray-100 w-full justify-center font-medium" 
-          : "text-gray-600 hover:text-forest-dark"
+          : isActive 
+            ? "text-forest-dark font-medium" 
+            : "text-gray-600 hover:text-forest-dark"
       )}
       onClick={onClick}
     >

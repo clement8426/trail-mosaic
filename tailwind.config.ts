@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,22 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Custom colors for mountain bike app
+				forest: {
+					DEFAULT: '#2D5031',
+					light: '#3E6A42',
+					dark: '#1C3F1F',
+				},
+				earth: {
+					DEFAULT: '#A67C52',
+					light: '#C6A17E',
+					dark: '#7A5F3C',
+				},
+				trail: {
+					DEFAULT: '#F97316', // Bright orange
+					light: '#FB9851',
+					dark: '#C45A05',
 				}
 			},
 			borderRadius: {
@@ -84,11 +101,22 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'bounce-subtle': {
+					'0%, 100%': {
+						transform: 'translateY(-5%)',
+						animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)'
+					},
+					'50%': {
+						transform: 'translateY(0)',
+						animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'bounce-subtle': 'bounce-subtle 2s infinite'
 			}
 		}
 	},

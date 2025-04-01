@@ -53,12 +53,6 @@ const CreateSpot = () => {
   const [obstacleType, setObstacleType] = useState<Obstacle["type"]>("Bosse");
   const [obstacleDescription, setObstacleDescription] = useState("");
 
-  // Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
-  if (!currentUser) {
-    navigate("/login");
-    return null;
-  }
-
   const form = useForm<TrailFormValues>({
     resolver: zodResolver(trailFormSchema),
     defaultValues: {
@@ -74,6 +68,12 @@ const CreateSpot = () => {
       legalConsent: false,
     },
   });
+
+  // Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
+  if (!currentUser) {
+    navigate("/login");
+    return null;
+  }
 
   // Gérer l'ajout d'un obstacle
   const handleAddObstacle = () => {

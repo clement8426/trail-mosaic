@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import CreateSpot from "./pages/CreateSpot";
 import SpotDetail from "./pages/SpotDetail";
 import NotFound from "./pages/NotFound";
+import Map from "./pages/Map";
 
 const queryClient = new QueryClient();
 
@@ -25,8 +26,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/map" element={<Index />} />
-            <Route path="/trails" element={<Index />} />
+            <Route path="/map" element={<Map />} />
+            <Route path="/trails" element={<Map />} />
             <Route path="/events" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

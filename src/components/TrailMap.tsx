@@ -1,25 +1,55 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { trails } from '../data/trailsData';
-import { MapPin } from 'lucide-react';
+import { MapPin, X, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
-// We would normally use a map library like Mapbox or Leaflet here
-// This is a simplified placeholder for demonstration purposes
+interface TrailMapProps {
+  selectedTrail?: string | null;
+  onTrailSelect?: (trailId: string | null) => void;
+}
 
-const TrailMap: React.FC = () => {
+const TrailMap: React.FC<TrailMapProps> = ({ selectedTrail, onTrailSelect }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const [selectedTrail, setSelectedTrail] = useState<string | null>(null);
-
+  const [mapLoaded, setMapLoaded] = useState(false);
+  
   useEffect(() => {
+    // Simulate map loading
+    const loadingTimeout = setTimeout(() => {
+      setMapLoaded(true);
+    }, 500);
+    
     // In a real implementation, this is where you would initialize your map
     console.log('Map would initialize here with a real mapping library');
+    
+    return () => clearTimeout(loadingTimeout);
   }, []);
+
+  const handleSelectTrail = (trailId: string) => {
+    if (onTrailSelect) {
+      onTrailSelect(trailId);
+    }
+  };
+
+  const selectedTrailData = selectedTrail ? trails.find(t => t.id === selectedTrail) : null;
 
   return (
     <div className="relative w-full h-full bg-gray-100 rounded-lg overflow-hidden">
+      {!mapLoaded ? (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-forest"></div>
+          <span className="ml-3 text-forest font-medium">Chargement de la carte...</span>
+        </div>
+      ) : null}
+      
       <div
         ref={mapContainerRef}
-        className="relative w-full h-full bg-[url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=2074&auto=format&fit=crop')] bg-cover bg-center"
+        className={cn(
+          "relative w-full h-full bg-[url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=2074&auto=format&fit=crop')] bg-cover bg-center",
+          !mapLoaded && "opacity-0"
+        )}
       >
         <div className="absolute inset-0 bg-black/10" />
         
@@ -34,7 +64,7 @@ const TrailMap: React.FC = () => {
               left: `${(trail.coordinates[0] + 10) * 3}%`,
               top: `${(trail.coordinates[1] - 40) * -1}%`,
             }}
-            onClick={() => setSelectedTrail(trail.id)}
+            onClick={() => handleSelectTrail(trail.id)}
           >
             <div className="relative group">
               <MapPin
@@ -62,30 +92,35 @@ const TrailMap: React.FC = () => {
         ))}
 
         {/* Map overlay for trail info */}
-        {selectedTrail && (
+        {selectedTrailData && (
           <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-72 bg-white rounded-lg shadow-lg p-4">
-            {(() => {
-              const trail = trails.find((t) => t.id === selectedTrail);
-              if (!trail) return null;
-              
-              return (
-                <>
-                  <h3 className="font-bold text-forest-dark">{trail.name}</h3>
-                  <p className="text-sm text-gray-500">{trail.location}</p>
-                  <div className="flex justify-between mt-2 text-sm">
-                    <span>{trail.distance} km</span>
-                    <span>{trail.difficulty}</span>
-                    <span>{trail.trailType}</span>
-                  </div>
-                  <button 
-                    className="w-full bg-forest text-white py-2 rounded mt-3 text-sm font-medium hover:bg-forest-dark transition-colors"
-                    onClick={() => console.log(`View trail ${trail.id}`)}
-                  >
-                    Voir les détails
-                  </button>
-                </>
-              );
-            })()}
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-bold text-forest-dark">{selectedTrailData.name}</h3>
+                <p className="text-sm text-gray-500">{selectedTrailData.location}</p>
+              </div>
+              <Button 
+                size="sm" 
+                variant="ghost"
+                className="h-7 w-7 p-0"
+                onClick={() => onTrailSelect && onTrailSelect(null)}
+              >
+                <X size={16} />
+              </Button>
+            </div>
+            
+            <div className="flex justify-between mt-2 text-sm">
+              <span>{selectedTrailData.distance} km</span>
+              <span>{selectedTrailData.difficulty}</span>
+              <span>{selectedTrailData.trailType}</span>
+            </div>
+            <Link to={`/spots/${selectedTrailData.id}`}>
+              <Button 
+                className="w-full bg-forest text-white py-2 rounded mt-3 text-sm font-medium hover:bg-forest-dark transition-colors"
+              >
+                Voir les détails
+              </Button>
+            </Link>
           </div>
         )}
 

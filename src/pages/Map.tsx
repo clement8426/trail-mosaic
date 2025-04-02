@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { trails } from "@/data/trailsData";
@@ -6,7 +5,7 @@ import { events } from "@/data/eventsData";
 import { Trail, Event, Session, BikeType, TrailType, DifficultyLevel } from "@/types";
 import TrailMap from "@/components/TrailMap";
 import FilterBar from "@/components/FilterBar";
-import { ChevronRight, ChevronLeft, Map as MapIcon, CalendarDays, Users } from "lucide-react";
+import { ChevronRight, ChevronLeft, Map as MapIcon, CalendarDays, Users, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";

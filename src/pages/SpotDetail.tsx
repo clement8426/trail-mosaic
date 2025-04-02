@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,14 +26,11 @@ const SpotDetail = () => {
   const [sessionTime, setSessionTime] = useState("");
   const [sessionDescription, setSessionDescription] = useState("");
 
-  // Simuler le chargement des données depuis une API
   useEffect(() => {
-    // Dans un projet réel, ce serait une requête à une API
     setLoading(true);
     const fetchedTrail = trails.find((t) => t.id === id);
     
     if (fetchedTrail) {
-      // Ajout des propriétés manquantes pour la simulation
       const enhancedTrail: Trail = {
         ...fetchedTrail,
         comments: fetchedTrail.comments || [],
@@ -44,7 +40,6 @@ const SpotDetail = () => {
       
       setTrail(enhancedTrail);
       
-      // Vérifier si ce spot est dans les favoris de l'utilisateur
       if (currentUser && currentUser.favorites) {
         setIsFavorite(currentUser.favorites.includes(fetchedTrail.id));
       }
@@ -53,14 +48,12 @@ const SpotDetail = () => {
     setLoading(false);
   }, [id, currentUser]);
 
-  // Gérer l'ajout aux favoris
   const handleToggleFavorite = () => {
     if (!currentUser) {
       navigate("/login");
       return;
     }
 
-    // Dans un projet réel, ce serait une requête à une API
     setIsFavorite(!isFavorite);
     
     if (!isFavorite) {
@@ -70,7 +63,6 @@ const SpotDetail = () => {
     }
   };
 
-  // Gérer l'ajout d'un commentaire
   const handleAddComment = () => {
     if (!currentUser) {
       navigate("/login");
@@ -84,7 +76,6 @@ const SpotDetail = () => {
 
     if (!trail) return;
 
-    // Créer un nouveau commentaire
     const newComment: Comment = {
       id: Date.now().toString(),
       userId: currentUser.id,
@@ -94,13 +85,11 @@ const SpotDetail = () => {
       rating: userRating || undefined,
     };
 
-    // Dans un projet réel, ce serait une requête à une API
     const updatedTrail: Trail = {
       ...trail,
       comments: [...(trail.comments || []), newComment],
     };
 
-    // Si l'utilisateur a donné une note, mettre à jour la note moyenne
     if (userRating > 0) {
       const totalRating = (trail.rating * trail.reviews) + userRating;
       const newReviews = trail.reviews + 1;
@@ -114,7 +103,6 @@ const SpotDetail = () => {
     toast.success("Commentaire ajouté");
   };
 
-  // Gérer l'ajout d'une session
   const handleAddSession = () => {
     if (!currentUser) {
       navigate("/login");
@@ -128,7 +116,6 @@ const SpotDetail = () => {
 
     if (!trail) return;
 
-    // Créer une nouvelle session
     const newSession: Session = {
       id: Date.now().toString(),
       title: sessionTitle,
@@ -143,15 +130,14 @@ const SpotDetail = () => {
           status: "going",
         },
       ],
+      trailId: trail.id
     };
 
-    // Dans un projet réel, ce serait une requête à une API
     setTrail({
       ...trail,
       sessions: [...(trail.sessions || []), newSession],
     });
 
-    // Réinitialiser le formulaire
     setSessionTitle("");
     setSessionDate("");
     setSessionTime("");
@@ -159,7 +145,6 @@ const SpotDetail = () => {
     toast.success("Session ajoutée");
   };
 
-  // Gérer la participation à une session
   const handleParticipateSession = (sessionId: string, status: "going" | "interested" | "not_going") => {
     if (!currentUser) {
       navigate("/login");
@@ -168,16 +153,13 @@ const SpotDetail = () => {
 
     if (!trail) return;
 
-    // Dans un projet réel, ce serait une requête à une API
     const updatedSessions = trail.sessions?.map((session) => {
       if (session.id === sessionId) {
-        // Vérifier si l'utilisateur est déjà dans la liste des participants
         const existingParticipant = session.participants.find(
           (p) => p.userId === currentUser.id
         );
 
         if (existingParticipant) {
-          // Mettre à jour le statut de l'utilisateur existant
           return {
             ...session,
             participants: session.participants.map((p) =>
@@ -185,7 +167,6 @@ const SpotDetail = () => {
             ),
           };
         } else {
-          // Ajouter l'utilisateur à la liste des participants
           return {
             ...session,
             participants: [
@@ -210,7 +191,6 @@ const SpotDetail = () => {
     toast.success(`Votre participation a été mise à jour`);
   };
 
-  // Afficher un message de chargement pendant le chargement des données
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
@@ -222,7 +202,6 @@ const SpotDetail = () => {
     );
   }
 
-  // Afficher un message si le spot n'existe pas
   if (!trail) {
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
@@ -238,7 +217,6 @@ const SpotDetail = () => {
     );
   }
 
-  // Fonction pour obtenir la couleur de la difficulté
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'Débutant': return 'bg-green-500';
@@ -254,7 +232,6 @@ const SpotDetail = () => {
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 pt-24 pb-12">
-        {/* En-tête du spot */}
         <div className="relative h-64 md:h-96 rounded-lg overflow-hidden mb-6">
           <img
             src={trail.imageUrl}
@@ -290,11 +267,8 @@ const SpotDetail = () => {
           </Button>
         </div>
         
-        {/* Contenu principal */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Colonne principale */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Informations générales */}
             <Card>
               <CardContent className="p-6 space-y-6">
                 <div>
@@ -354,7 +328,6 @@ const SpotDetail = () => {
               </CardContent>
             </Card>
             
-            {/* Sessions de ride */}
             <Card>
               <CardContent className="p-6">
                 <h2 className="text-xl font-bold mb-4">Sessions de ride</h2>
@@ -495,7 +468,6 @@ const SpotDetail = () => {
               </CardContent>
             </Card>
             
-            {/* Commentaires */}
             <Card>
               <CardContent className="p-6">
                 <h2 className="text-xl font-bold mb-4">
@@ -580,9 +552,7 @@ const SpotDetail = () => {
             </Card>
           </div>
           
-          {/* Colonne latérale */}
           <div className="space-y-6">
-            {/* Carte (placeholder) */}
             <Card>
               <CardContent className="p-0 h-64">
                 <div className="w-full h-full bg-gray-100 flex items-center justify-center">
@@ -591,7 +561,6 @@ const SpotDetail = () => {
               </CardContent>
             </Card>
             
-            {/* Contributeurs */}
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-bold mb-4">Contributeurs</h3>
@@ -623,7 +592,6 @@ const SpotDetail = () => {
               </CardContent>
             </Card>
             
-            {/* Signaler un problème */}
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-bold mb-2">Signaler un problème</h3>
@@ -636,7 +604,6 @@ const SpotDetail = () => {
               </CardContent>
             </Card>
             
-            {/* Proposer une modification */}
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-bold mb-2">Proposer une modification</h3>

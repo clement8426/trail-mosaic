@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import haversineDistance from "haversine-distance";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock sessions data
 const mockSessions: Session[] = [
@@ -44,9 +45,10 @@ const mockSessions: Session[] = [
 
 const Map: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<"map" | "trails" | "events" | "sessions">("map");
+  const [activeView, setActiveView] = useState<"all" | "trails" | "events" | "sessions">("all");
   const [selectedTrailId, setSelectedTrailId] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
     difficulty: 'Tous' as DifficultyLevel | 'Tous',
@@ -60,6 +62,7 @@ const Map: React.FC = () => {
   const [filteredTrails, setFilteredTrails] = useState<Trail[]>(trails);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>(events);
   const [filteredSessions, setFilteredSessions] = useState<Session[]>(mockSessions);
+  const { toast } = useToast();
 
   // Get user location when component mounts
   useEffect(() => {
@@ -67,13 +70,22 @@ const Map: React.FC = () => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation([position.coords.longitude, position.coords.latitude]);
+          toast({
+            title: "Localisation activée",
+            description: "Nous utilisons votre position pour trouver les spots près de chez vous.",
+          });
         },
         (error) => {
           console.error("Error getting geolocation:", error);
+          toast({
+            variant: "destructive",
+            title: "Erreur de géolocalisation",
+            description: "Impossible d'obtenir votre position. Veuillez l'activer dans votre navigateur.",
+          });
         }
       );
     }
-  }, []);
+  }, [toast]);
 
   // Apply filters to the data
   useEffect(() => {
@@ -96,7 +108,10 @@ const Map: React.FC = () => {
       const matchesBike = filters.bikeType === "Tous" || 
         trail.recommendedBikes.includes(filters.bikeType);
       
-      return matchesSearch && matchesDifficulty && matchesType && matchesBike;
+      // Region filter (if a region is selected)
+      const matchesRegion = !selectedRegion || trail.region === selectedRegion;
+      
+      return matchesSearch && matchesDifficulty && matchesType && matchesBike && matchesRegion;
     });
 
     // Apply distance filter if location is set
@@ -118,12 +133,7 @@ const Map: React.FC = () => {
           trail.distance >= filters.distanceRange[0] && 
           trail.distance <= filters.distanceRange[1]
         )
-        .sort((a, b) => {
-          if (a.distance !== undefined && b.distance !== undefined) {
-            return a.distance - b.distance;
-          }
-          return 0;
-        });
+        .sort((a, b) => a.distance - b.distance);
     }
 
     setFilteredTrails(trailResults);
@@ -134,7 +144,10 @@ const Map: React.FC = () => {
         event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.location.toLowerCase().includes(searchTerm.toLowerCase());
       
-      return matchesSearch;
+      // Region filter (if a region is selected)
+      const matchesRegion = !selectedRegion || event.region === selectedRegion;
+      
+      return matchesSearch && matchesRegion;
     });
 
     // Apply distance filter if location is set
@@ -159,12 +172,7 @@ const Map: React.FC = () => {
           event.distance >= filters.distanceRange[0] && 
           event.distance <= filters.distanceRange[1]
         )
-        .sort((a, b) => {
-          if (a.distance !== undefined && b.distance !== undefined) {
-            return a.distance - b.distance;
-          }
-          return 0;
-        });
+        .sort((a, b) => a.distance - b.distance);
     }
 
     setFilteredEvents(eventResults);
@@ -175,7 +183,11 @@ const Map: React.FC = () => {
         session.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         session.description.toLowerCase().includes(searchTerm.toLowerCase());
       
-      return matchesSearch;
+      // Region filter (if a region is selected)
+      const relatedTrail = trails.find(t => t.id === session.trailId);
+      const matchesRegion = !selectedRegion || (relatedTrail && relatedTrail.region === selectedRegion);
+      
+      return matchesSearch && matchesRegion;
     });
 
     // Apply distance filter if location is set
@@ -197,34 +209,35 @@ const Map: React.FC = () => {
           };
         })
         .filter(session => 
+          'distance' in session && 
           session.distance !== undefined && 
           session.distance >= filters.distanceRange[0] && 
           session.distance <= filters.distanceRange[1]
         )
         .sort((a, b) => {
-          if (a.distance !== undefined && b.distance !== undefined) {
-            return a.distance - b.distance;
+          if ('distance' in a && 'distance' in b) {
+            return a.distance! - b.distance!;
           }
           return 0;
         });
     }
 
     setFilteredSessions(sessionResults);
-  }, [searchTerm, filters]);
+  }, [searchTerm, filters, selectedRegion]);
 
   // Helper to get event coordinates
   const getEventCoordinates = (event: Event): [number, number] => {
     // Mock function to return coordinates for an event
+    if (event.coordinates) {
+      return event.coordinates;
+    }
+    
     const mockCoords: {[key: string]: [number, number]} = {
       "Parc National des Cévennes": [3.6, 44.2],
       "Montpellier": [3.8767, 43.6108],
       "Lyon": [4.8357, 45.7640],
       "Chamonix": [6.8696, 45.9237]
     };
-    
-    if (event.coordinates) {
-      return event.coordinates;
-    }
     
     return mockCoords[event.location] || [2.3522, 48.8566]; // Default to Paris if not found
   };
@@ -236,6 +249,22 @@ const Map: React.FC = () => {
       month: 'long',
       year: 'numeric'
     }).format(date);
+  };
+
+  const handleFilterChange = (newFilters: {
+    difficulty: DifficultyLevel | 'Tous';
+    trailType: TrailType | 'Tous';
+    bikeType: BikeType;
+    distanceRange: [number, number];
+    location?: [number, number];
+    locationName?: string;
+  }) => {
+    setFilters({
+      ...filters,
+      ...newFilters,
+      location: newFilters.location || filters.location,
+      locationName: newFilters.locationName || filters.locationName
+    });
   };
 
   return (
@@ -253,8 +282,8 @@ const Map: React.FC = () => {
           <div className="p-4 h-full flex flex-col overflow-hidden">
             {/* Tabs */}
             <Tabs 
-              value={activeTab !== "map" ? activeTab : "trails"}
-              onValueChange={(value) => setActiveTab(value as "trails" | "events" | "sessions")}
+              value={activeView !== "all" ? activeView : "trails"}
+              onValueChange={(value) => setActiveView(value as "all" | "trails" | "events" | "sessions")}
               className="mb-4"
             >
               <TabsList className="grid grid-cols-3 w-full">
@@ -267,13 +296,29 @@ const Map: React.FC = () => {
             {/* Filters */}
             <FilterBar
               onSearch={setSearchTerm}
-              onFilterChange={setFilters}
-              mode={activeTab === "trails" ? "trails" : activeTab === "events" ? "events" : "sessions"}
+              onFilterChange={handleFilterChange}
+              mode={activeView === "trails" || activeView === "all" ? "trails" : activeView === "events" ? "events" : "sessions"}
             />
+            
+            {/* Region header if a region is selected */}
+            {selectedRegion && (
+              <div className="mt-4 mb-2">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold text-lg">{selectedRegion}</h2>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setSelectedRegion(null)}
+                  >
+                    Voir toutes les régions
+                  </Button>
+                </div>
+              </div>
+            )}
             
             {/* Results */}
             <div className="mt-4 flex-1 overflow-y-auto">
-              {activeTab === "trails" && (
+              {(activeView === "trails" || activeView === "all") && (
                 <>
                   <h2 className="font-semibold mb-2">Spots ({filteredTrails.length})</h2>
                   <div className="space-y-2">
@@ -323,7 +368,7 @@ const Map: React.FC = () => {
                 </>
               )}
               
-              {activeTab === "events" && (
+              {(activeView === "events" || activeView === "all") && (
                 <>
                   <h2 className="font-semibold mb-2">Événements ({filteredEvents.length})</h2>
                   <div className="space-y-2">
@@ -357,7 +402,7 @@ const Map: React.FC = () => {
                 </>
               )}
               
-              {activeTab === "sessions" && (
+              {(activeView === "sessions" || activeView === "all") && (
                 <>
                   <h2 className="font-semibold mb-2">Sessions ({filteredSessions.length})</h2>
                   <div className="space-y-2">
@@ -397,7 +442,7 @@ const Map: React.FC = () => {
                                   +{session.participants.length - 3}
                                 </span>
                               )}
-                              {"distance" in session && (
+                              {'distance' in session && session.distance !== undefined && (
                                 <div className="ml-auto">
                                   <span className="text-xs font-medium px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
                                     {session.distance} km
@@ -431,29 +476,29 @@ const Map: React.FC = () => {
           {/* View type buttons */}
           <div className="absolute top-4 right-4 z-10 bg-white rounded-lg shadow-md flex">
             <Button
-              variant={activeTab === "map" ? "default" : "ghost"}
+              variant={activeView === "all" ? "default" : "ghost"}
               className="flex items-center gap-2 rounded-l-lg rounded-r-none"
-              onClick={() => setActiveTab("map")}
+              onClick={() => setActiveView("all")}
             >
               <MapIcon size={18} />
-              <span className="hidden sm:inline">Carte</span>
+              <span className="hidden sm:inline">Tout</span>
             </Button>
             <Button
-              variant={activeTab === "trails" && activeTab !== "map" ? "default" : "ghost"}
+              variant={activeView === "trails" ? "default" : "ghost"}
               className="flex items-center gap-2 rounded-none border-x"
               onClick={() => {
-                setActiveTab("trails");
+                setActiveView("trails");
                 setSidebarOpen(true);
               }}
             >
-              <MapIcon size={18} />
+              <MapPin size={18} />
               <span className="hidden sm:inline">Spots</span>
             </Button>
             <Button
-              variant={activeTab === "events" ? "default" : "ghost"}
+              variant={activeView === "events" ? "default" : "ghost"}
               className="flex items-center gap-2 rounded-none border-r"
               onClick={() => {
-                setActiveTab("events");
+                setActiveView("events");
                 setSidebarOpen(true);
               }}
             >
@@ -461,10 +506,10 @@ const Map: React.FC = () => {
               <span className="hidden sm:inline">Événements</span>
             </Button>
             <Button
-              variant={activeTab === "sessions" ? "default" : "ghost"}
+              variant={activeView === "sessions" ? "default" : "ghost"}
               className="flex items-center gap-2 rounded-r-lg rounded-l-none"
               onClick={() => {
-                setActiveTab("sessions");
+                setActiveView("sessions");
                 setSidebarOpen(true);
               }}
             >
@@ -477,10 +522,13 @@ const Map: React.FC = () => {
             <TrailMap 
               selectedTrail={selectedTrailId}
               onTrailSelect={setSelectedTrailId}
-              displayTrails={activeTab === "map" || activeTab === "trails"}
-              displayEvents={activeTab === "map" || activeTab === "events"}
-              displaySessions={activeTab === "map" || activeTab === "sessions"}
+              displayTrails={activeView === "all" || activeView === "trails"}
+              displayEvents={activeView === "all" || activeView === "events"}
+              displaySessions={activeView === "all" || activeView === "sessions"}
               userLocation={userLocation}
+              onRegionSelect={setSelectedRegion}
+              selectedRegion={selectedRegion}
+              activeView={activeView}
             />
           </div>
         </div>

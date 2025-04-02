@@ -30,6 +30,7 @@ export interface Trail {
   contributors?: Contributor[]; // List of users who contributed to this trail
   comments?: Comment[]; // List of comments
   sessions?: Session[]; // List of ride sessions
+  region?: string; // Region name for clustering
 }
 
 export interface Contributor {
@@ -61,6 +62,8 @@ export interface Session {
     username: string;
     status: 'going' | 'interested' | 'not_going';
   }[];
+  trailId: string; // Reference to the trail/spot this session belongs to
+  distance?: number; // Distance from user location, calculated dynamically
 }
 
 export interface Event {
@@ -71,8 +74,10 @@ export interface Event {
   location: string;
   imageUrl: string;
   category: 'Compétition' | 'Rassemblement' | 'Formation';
-  trailId?: string; // Optional reference to a trail
+  trailId?: string; // Reference to a trail
   coordinates?: [number, number]; // [longitude, latitude]
+  distance?: number; // Distance from user location, calculated dynamically
+  region?: string; // Region name for clustering
 }
 
 export interface User {
@@ -112,4 +117,12 @@ export interface TrailModification {
     userId: string;
     vote: 'up' | 'down';
   }[];
+}
+
+export interface RegionSummary {
+  name: string;
+  coordinates: [number, number];
+  spotCount: number;
+  eventCount: number;
+  sessionCount: number;
 }

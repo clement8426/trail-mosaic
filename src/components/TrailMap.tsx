@@ -86,6 +86,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
     id: string;
     data: Trail | Event | Session | RegionSummary;
   } | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(5);
 
   const { toast } = useToast();
   
@@ -118,6 +119,13 @@ const TrailMap: React.FC<TrailMapProps> = ({
       setMapLoaded(true);
     });
 
+    // Listen for zoom events
+    map.current.on('zoom', () => {
+      if (map.current) {
+        setZoomLevel(map.current.getZoom());
+      }
+    });
+
     // Clean up on unmount
     return () => {
       if (map.current) {
@@ -128,7 +136,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
     };
   }, []);
 
-  // Update markers when map is loaded and data changes
+  // Update markers when map is loaded, data changes, or zoom level changes
   useEffect(() => {
     if (!mapLoaded || !map.current) return;
     
@@ -196,7 +204,8 @@ const TrailMap: React.FC<TrailMapProps> = ({
     displaySessions, 
     selectedTrail, 
     activeView, 
-    selectedRegion
+    selectedRegion,
+    zoomLevel // Added zoom level dependency to refresh markers on zoom
   ]);
 
   // Center map on user location when available

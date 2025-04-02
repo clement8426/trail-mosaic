@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import haversineDistance from "haversine-distance";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock sessions data
 const mockSessions: Session[] = [
   {
     id: "session1",
@@ -63,7 +62,6 @@ const Map: React.FC = () => {
   const [filteredSessions, setFilteredSessions] = useState<Session[]>(mockSessions);
   const { toast } = useToast();
 
-  // Get user location when component mounts
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -86,41 +84,33 @@ const Map: React.FC = () => {
     }
   }, [toast]);
 
-  // Apply filters to the data
   useEffect(() => {
-    // Filter trails
     let trailResults = trails.filter(trail => {
-      // Search term filter
       const matchesSearch = searchTerm === "" || 
         trail.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         trail.location.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Difficulty filter
       const matchesDifficulty = filters.difficulty === "Tous" || 
         trail.difficulty === filters.difficulty;
       
-      // Trail type filter
       const matchesType = filters.trailType === "Tous" || 
         trail.trailType === filters.trailType;
       
-      // Bike type filter
       const matchesBike = filters.bikeType === "Tous" || 
         trail.recommendedBikes.includes(filters.bikeType);
       
-      // Region filter (if a region is selected)
       const matchesRegion = !selectedRegion || trail.region === selectedRegion;
       
       return matchesSearch && matchesDifficulty && matchesType && matchesBike && matchesRegion;
     });
 
-    // Apply distance filter if location is set
     if (filters.location) {
       trailResults = trailResults
         .map(trail => {
           const distance = haversineDistance(
             { lat: filters.location![1], lng: filters.location![0] },
             { lat: trail.coordinates[1], lng: trail.coordinates[0] }
-          ) / 1000; // Convert to kilometers
+          ) / 1000;
           
           return {
             ...trail,
@@ -137,29 +127,25 @@ const Map: React.FC = () => {
 
     setFilteredTrails(trailResults);
 
-    // Filter events
     let eventResults = events.filter(event => {
       const matchesSearch = searchTerm === "" || 
         event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.location.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Region filter (if a region is selected)
       const matchesRegion = !selectedRegion || event.region === selectedRegion;
       
       return matchesSearch && matchesRegion;
     });
 
-    // Apply distance filter if location is set
     if (filters.location) {
       eventResults = eventResults
         .map(event => {
-          // Get event coordinates
           const coords = getEventCoordinates(event);
           
           const distance = haversineDistance(
             { lat: filters.location![1], lng: filters.location![0] },
             { lat: coords[1], lng: coords[0] }
-          ) / 1000; // Convert to kilometers
+          ) / 1000;
           
           return {
             ...event,
@@ -176,31 +162,27 @@ const Map: React.FC = () => {
 
     setFilteredEvents(eventResults);
 
-    // Filter sessions
     let sessionResults = mockSessions.filter(session => {
       const matchesSearch = searchTerm === "" || 
         session.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         session.description.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Region filter (if a region is selected)
       const relatedTrail = trails.find(t => t.id === session.trailId);
       const matchesRegion = !selectedRegion || (relatedTrail && relatedTrail.region === selectedRegion);
       
       return matchesSearch && matchesRegion;
     });
 
-    // Apply distance filter if location is set
     if (filters.location) {
       sessionResults = sessionResults
         .map(session => {
-          // Find related trail to get coordinates
           const relatedTrail = trails.find(t => t.id === session.trailId);
           if (!relatedTrail) return session;
           
           const distance = haversineDistance(
             { lat: filters.location![1], lng: filters.location![0] },
             { lat: relatedTrail.coordinates[1], lng: relatedTrail.coordinates[0] }
-          ) / 1000; // Convert to kilometers
+          ) / 1000;
           
           return {
             ...session,
@@ -224,13 +206,7 @@ const Map: React.FC = () => {
     setFilteredSessions(sessionResults);
   }, [searchTerm, filters, selectedRegion]);
 
-  // Helper to get event coordinates
   const getEventCoordinates = (event: Event): [number, number] => {
-    // Mock function to return coordinates for an event
-    if (event.coordinates) {
-      return event.coordinates;
-    }
-    
     const mockCoords: {[key: string]: [number, number]} = {
       "Parc National des Cévennes": [3.6, 44.2],
       "Montpellier": [3.8767, 43.6108],
@@ -238,7 +214,7 @@ const Map: React.FC = () => {
       "Chamonix": [6.8696, 45.9237]
     };
     
-    return mockCoords[event.location] || [2.3522, 48.8566]; // Default to Paris if not found
+    return mockCoords[event.location] || [2.3522, 48.8566];
   };
 
   const formatDate = (dateStr: string) => {
@@ -271,7 +247,6 @@ const Map: React.FC = () => {
       <Navbar />
       
       <div className="flex flex-1 pt-16">
-        {/* Sidebar */}
         <div 
           className={cn(
             "h-[calc(100vh-64px)] transition-all duration-300 overflow-hidden bg-white border-r",
@@ -279,7 +254,6 @@ const Map: React.FC = () => {
           )}
         >
           <div className="p-4 h-full flex flex-col overflow-hidden">
-            {/* Tabs */}
             <Tabs 
               value={activeView !== "all" ? activeView : "trails"}
               onValueChange={(value) => setActiveView(value as "all" | "trails" | "events" | "sessions")}
@@ -292,14 +266,12 @@ const Map: React.FC = () => {
               </TabsList>
             </Tabs>
             
-            {/* Filters */}
             <FilterBar
               onSearch={setSearchTerm}
               onFilterChange={handleFilterChange}
               mode={activeView === "trails" || activeView === "all" ? "trails" : activeView === "events" ? "events" : "sessions"}
             />
             
-            {/* Region header if a region is selected */}
             {selectedRegion && (
               <div className="mt-4 mb-2">
                 <div className="flex items-center justify-between">
@@ -315,7 +287,6 @@ const Map: React.FC = () => {
               </div>
             )}
             
-            {/* Results */}
             <div className="mt-4 flex-1 overflow-y-auto">
               {(activeView === "trails" || activeView === "all") && (
                 <>
@@ -460,9 +431,7 @@ const Map: React.FC = () => {
           </div>
         </div>
         
-        {/* Map Container */}
         <div className="flex-1 relative">
-          {/* Sidebar toggle button */}
           <Button 
             variant="secondary"
             size="icon"
@@ -472,7 +441,6 @@ const Map: React.FC = () => {
             {sidebarOpen ? <ChevronLeft /> : <ChevronRight />}
           </Button>
           
-          {/* View type buttons */}
           <div className="absolute top-4 right-4 z-10 bg-white rounded-lg shadow-md flex">
             <Button
               variant={activeView === "all" ? "default" : "ghost"}

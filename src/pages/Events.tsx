@@ -1,18 +1,15 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import { Calendar, MapPin, Search, Navigation } from 'lucide-react';
+import { Calendar, MapPin, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { events } from '@/data/eventsData';
 import { Event } from '@/types';
-import { cn } from '@/lib/utils';
 import EventMap from '@/components/EventMap';
 import haversineDistance from 'haversine-distance';
 
 const Events: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<[number, number] | null>(null);
   const [sortedEvents, setSortedEvents] = useState<(Event & { distance?: number })[]>(events);
@@ -59,8 +56,7 @@ const Events: React.FC = () => {
   const sortEventsByDistance = (referencePoint: [number, number]) => {
     // Make a copy of events and add distance
     const eventsWithDistance = events.map(event => {
-      // For this example, we're using mock coordinates
-      // In a real app, these would come from the events data
+      // Get coordinates for the event
       const eventCoords = getEventCoordinates(event);
       
       // Calculate distance using Haversine formula
@@ -77,7 +73,7 @@ const Events: React.FC = () => {
     
     // Sort by distance
     eventsWithDistance.sort((a, b) => {
-      if (a.distance && b.distance) {
+      if (a.distance !== undefined && b.distance !== undefined) {
         return a.distance - b.distance;
       }
       return 0;
@@ -159,7 +155,7 @@ const Events: React.FC = () => {
                     <div 
                       key={event.id}
                       className="border border-gray-200 rounded-lg p-3 hover:border-forest transition-colors cursor-pointer"
-                      onClick={() => navigate(`/spots/${event.trailId}`)}
+                      onClick={() => event.trailId ? navigate(`/spots/${event.trailId}`) : null}
                     >
                       <div className="aspect-video mb-2 overflow-hidden rounded-md">
                         <img 

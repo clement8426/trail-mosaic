@@ -14,6 +14,7 @@ import CreateSpot from "./pages/CreateSpot";
 import SpotDetail from "./pages/SpotDetail";
 import NotFound from "./pages/NotFound";
 import Map from "./pages/Map";
+import Events from "./pages/Events";
 
 const queryClient = new QueryClient();
 
@@ -28,7 +29,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/map" element={<Map />} />
             <Route path="/trails" element={<Map />} />
-            <Route path="/events" element={<Index />} />
+            <Route path="/events" element={<Events />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

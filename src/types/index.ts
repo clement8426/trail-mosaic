@@ -72,6 +72,7 @@ export interface Event {
   imageUrl: string;
   category: 'Compétition' | 'Rassemblement' | 'Formation';
   trailId?: string; // Optional reference to a trail
+  coordinates?: [number, number]; // [longitude, latitude]
 }
 
 export interface User {

@@ -2,6 +2,7 @@
 import React from "react";
 import Navbar from "@/components/Navbar";
 import { Bell, MapPin, Calendar, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Mock notification data
 const mockNotifications = [

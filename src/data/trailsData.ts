@@ -20,7 +20,8 @@ export const trails: Trail[] = [
       { type: "Virage serré", description: "Série de 5 virages en épingle" }
     ],
     rating: 4.8,
-    reviews: 32
+    reviews: 32,
+    region: "Occitanie"
   },
   {
     id: '2',
@@ -39,7 +40,8 @@ export const trails: Trail[] = [
       { type: "Virage serré", description: "Virages relevés permettant de conserver la vitesse" }
     ],
     rating: 4.5,
-    reviews: 47
+    reviews: 47,
+    region: "Occitanie"
   },
   {
     id: '3',
@@ -58,7 +60,8 @@ export const trails: Trail[] = [
       { type: "Gap", description: "Double gap avec possibilité de contournement" }
     ],
     rating: 4.7,
-    reviews: 65
+    reviews: 65,
+    region: "Auvergne-Rhône-Alpes"
   },
   {
     id: '4',
@@ -78,7 +81,8 @@ export const trails: Trail[] = [
       { type: "Northshore", description: "Passerelle en bois sur section exposée" }
     ],
     rating: 4.9,
-    reviews: 28
+    reviews: 28,
+    region: "Auvergne-Rhône-Alpes"
   },
   {
     id: '5',
@@ -97,7 +101,8 @@ export const trails: Trail[] = [
       { type: "Virage serré", description: "Virages larges et bien dessinés" }
     ],
     rating: 4.2,
-    reviews: 51
+    reviews: 51,
+    region: "Nouvelle-Aquitaine"
   },
   {
     id: '6',
@@ -117,6 +122,7 @@ export const trails: Trail[] = [
       { type: "Virage serré", description: "Berms sculptés" }
     ],
     rating: 4.6,
-    reviews: 89
+    reviews: 89,
+    region: "Grand Est"
   }
 ];

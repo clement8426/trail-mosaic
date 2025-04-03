@@ -10,7 +10,9 @@ export const events: Event[] = [
     location: 'Parc National des Cévennes',
     imageUrl: 'https://images.unsplash.com/photo-1601917993872-16fc37c1f872?q=80&w=2070&auto=format&fit=crop',
     category: 'Compétition',
-    trailId: '1'
+    trailId: '1',
+    region: 'Occitanie',
+    coordinates: [3.6895, 44.3252]
   },
   {
     id: '2',
@@ -20,7 +22,9 @@ export const events: Event[] = [
     location: 'Montpellier',
     imageUrl: 'https://images.unsplash.com/photo-1629685493563-56a4a6efe00d?q=80&w=2070&auto=format&fit=crop',
     category: 'Rassemblement',
-    trailId: '2'
+    trailId: '2',
+    region: 'Occitanie',
+    coordinates: [3.8767, 43.6108]
   },
   {
     id: '3',
@@ -30,7 +34,9 @@ export const events: Event[] = [
     location: 'Lyon',
     imageUrl: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=2070&auto=format&fit=crop',
     category: 'Formation',
-    trailId: '3'
+    trailId: '3',
+    region: 'Auvergne-Rhône-Alpes',
+    coordinates: [4.8357, 45.7640]
   },
   {
     id: '4',
@@ -40,6 +46,8 @@ export const events: Event[] = [
     location: 'Chamonix',
     imageUrl: 'https://images.unsplash.com/photo-1603435521001-36f9583896cf?q=80&w=2071&auto=format&fit=crop',
     category: 'Compétition',
-    trailId: '4'
+    trailId: '4',
+    region: 'Auvergne-Rhône-Alpes',
+    coordinates: [6.8698, 45.9237]
   }
 ];

@@ -110,30 +110,27 @@ const TrailMap: React.FC<TrailMapProps> = ({
     markers.current.forEach(marker => marker.remove());
     markers.current = [];
     
-    // Always show individual markers regardless of zoom level
+    // For each trail, check if it has associated events or sessions
     if (displayTrails) {
       trails
         .filter(trail => !selectedRegion || trail.region === selectedRegion)
         .forEach(trail => {
-          addMarker('trail', trail);
+          // Find events and sessions associated with this trail
+          const trailEvents = events.filter(event => event.trailId === trail.id);
+          const trailSessions = sessions.filter(session => session.trailId === trail.id);
+          
+          // Determine marker type based on associations
+          let markerType = 'trail';
+          if (trailEvents.length > 0 && trailSessions.length > 0) {
+            markerType = 'trail-event-session';
+          } else if (trailEvents.length > 0) {
+            markerType = 'trail-event';
+          } else if (trailSessions.length > 0) {
+            markerType = 'trail-session';
+          }
+          
+          addTrailMarker(trail, markerType, trailEvents, trailSessions);
         });
-    }
-
-    if (displayEvents) {
-      events
-        .filter(event => !selectedRegion || event.region === selectedRegion)
-        .forEach(event => {
-          addMarker('event', event);
-        });
-    }
-
-    if (displaySessions) {
-      sessions.forEach(session => {
-        const relatedTrail = trails.find(t => t.id === session.trailId);
-        if (relatedTrail && (!selectedRegion || relatedTrail.region === selectedRegion)) {
-          addMarker('session', session, relatedTrail.coordinates);
-        }
-      });
     }
       
     // If selectedTrail is set, select it
@@ -179,60 +176,135 @@ const TrailMap: React.FC<TrailMapProps> = ({
     });
   }, [userLocation, mapLoaded, toast]);
 
-  const addMarker = (type: 'trail' | 'event' | 'session', item: Trail | Event | Session, coordinates?: [number, number]) => {
+  const addTrailMarker = (
+    trail: Trail, 
+    type: 'trail' | 'trail-event' | 'trail-session' | 'trail-event-session',
+    trailEvents: Event[],
+    trailSessions: Session[]
+  ) => {
     if (!map.current) return;
 
-    let coords: [number, number];
+    const coords = trail.coordinates;
     let color: string;
-    let title: string;
-    let subtitle: string;
+    let borderColor: string = 'white';
+    let size: number = 24;
 
-    // Determine coordinates and marker properties based on type
+    // Determine marker color based on type
     switch (type) {
-      case 'trail':
-        const trail = item as Trail;
-        coords = trail.coordinates;
-        color = '#16a34a'; // Green
-        title = trail.name;
-        subtitle = trail.location;
+      case 'trail-event-session':
+        color = '#9b87f5'; // Purple for spots with both events and sessions
+        borderColor = '#FEC6A1'; // Orange border
+        size = 32; // Larger marker
         break;
-      case 'event':
-        const event = item as Event;
-        coords = getEventCoordinates(event);
-        color = '#f59e0b'; // Orange/yellow
-        title = event.title;
-        subtitle = event.date;
+      case 'trail-event':
+        color = '#f59e0b'; // Orange/amber for spots with events
+        borderColor = '#FEF7CD'; // Yellow border
+        size = 28;
         break;
-      case 'session':
-        const session = item as Session;
-        coords = coordinates || [0, 0]; // Use provided coordinates or default
-        color = '#3b82f6'; // Blue
-        title = session.title;
-        subtitle = `${session.date} - ${session.time}`;
+      case 'trail-session':
+        color = '#3b82f6'; // Blue for spots with sessions
+        borderColor = '#D3E4FD'; // Soft blue border
+        size = 28;
         break;
       default:
-        return;
+        color = '#16a34a'; // Green for regular spots
+        break;
     }
 
     // Create marker element
     const el = document.createElement('div');
     el.className = `marker-${type}`;
-    el.style.width = '24px';
-    el.style.height = '24px';
+    el.style.width = `${size}px`;
+    el.style.height = `${size}px`;
     el.style.borderRadius = '50%';
     el.style.backgroundColor = color;
-    el.style.border = '2px solid white';
+    el.style.border = `3px solid ${borderColor}`;
     el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
     el.style.cursor = 'pointer';
+    
+    // Add icons or counters for spots with events/sessions
+    if (type === 'trail-event-session' || type === 'trail-event' || type === 'trail-session') {
+      // Add a counter for multiple events/sessions
+      const countersDiv = document.createElement('div');
+      countersDiv.style.position = 'absolute';
+      countersDiv.style.bottom = '-5px';
+      countersDiv.style.right = '-5px';
+      countersDiv.style.display = 'flex';
+      
+      if (type === 'trail-event' || type === 'trail-event-session') {
+        const eventCounter = document.createElement('div');
+        eventCounter.style.width = '16px';
+        eventCounter.style.height = '16px';
+        eventCounter.style.borderRadius = '50%';
+        eventCounter.style.backgroundColor = '#f59e0b';
+        eventCounter.style.color = 'white';
+        eventCounter.style.fontSize = '10px';
+        eventCounter.style.display = 'flex';
+        eventCounter.style.alignItems = 'center';
+        eventCounter.style.justifyContent = 'center';
+        eventCounter.style.fontWeight = 'bold';
+        eventCounter.style.border = '1px solid white';
+        eventCounter.textContent = trailEvents.length.toString();
+        countersDiv.appendChild(eventCounter);
+      }
+      
+      if (type === 'trail-session' || type === 'trail-event-session') {
+        const sessionCounter = document.createElement('div');
+        sessionCounter.style.width = '16px';
+        sessionCounter.style.height = '16px';
+        sessionCounter.style.borderRadius = '50%';
+        sessionCounter.style.backgroundColor = '#3b82f6';
+        sessionCounter.style.color = 'white';
+        sessionCounter.style.fontSize = '10px';
+        sessionCounter.style.display = 'flex';
+        sessionCounter.style.alignItems = 'center';
+        sessionCounter.style.justifyContent = 'center';
+        sessionCounter.style.fontWeight = 'bold';
+        sessionCounter.style.border = '1px solid white';
+        sessionCounter.style.marginLeft = type === 'trail-event-session' ? '2px' : '0';
+        sessionCounter.textContent = trailSessions.length.toString();
+        countersDiv.appendChild(sessionCounter);
+      }
+      
+      el.appendChild(countersDiv);
+      el.style.position = 'relative';
+    }
     
     // Create marker
     const marker = new mapboxgl.Marker({ element: el })
       .setLngLat(coords)
       .addTo(map.current);
     
+    // Add popup with trail info and event/session counts
+    let popupContent = `
+      <div>
+        <h3 class="font-semibold">${trail.name}</h3>
+        <p class="text-xs text-gray-600">${trail.location}</p>
+    `;
+    
+    if (trailEvents.length > 0) {
+      popupContent += `
+        <p class="text-xs mt-1">
+          <span class="font-medium text-amber-600">Events: ${trailEvents.length}</span>
+        </p>
+      `;
+    }
+    
+    if (trailSessions.length > 0) {
+      popupContent += `
+        <p class="text-xs">
+          <span class="font-medium text-blue-600">Sessions: ${trailSessions.length}</span>
+        </p>
+      `;
+    }
+    
+    popupContent += `</div>`;
+    
+    marker.setPopup(new mapboxgl.Popup().setHTML(popupContent));
+    
     // Add click event to marker
     el.addEventListener('click', () => {
-      handleItemSelect(type, item);
+      handleItemSelect('trail', trail);
     });
     
     markers.current.push(marker);
@@ -351,6 +423,33 @@ const TrailMap: React.FC<TrailMapProps> = ({
                 <span>{(selectedItem.data as Trail).difficulty}</span>
                 <span>{(selectedItem.data as Trail).trailType}</span>
               </div>
+              
+              {/* Show event and session counts if they exist */}
+              {(() => {
+                const trailEvents = events.filter(event => event.trailId === selectedItem.id);
+                const trailSessions = sessions.filter(session => session.trailId === selectedItem.id);
+                
+                if (trailEvents.length > 0 || trailSessions.length > 0) {
+                  return (
+                    <div className="flex gap-2 mt-2">
+                      {trailEvents.length > 0 && (
+                        <div className="flex items-center text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
+                          <Calendar size={12} className="mr-1" />
+                          {trailEvents.length} événement{trailEvents.length > 1 ? 's' : ''}
+                        </div>
+                      )}
+                      {trailSessions.length > 0 && (
+                        <div className="flex items-center text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                          <Users size={12} className="mr-1" />
+                          {trailSessions.length} session{trailSessions.length > 1 ? 's' : ''}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              
               <Link to={`/spots/${selectedItem.id}`}>
                 <Button 
                   className="w-full bg-forest text-white py-2 rounded mt-3 text-sm font-medium hover:bg-forest-dark transition-colors"

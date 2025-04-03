@@ -41,5 +41,32 @@ export const sessions: Session[] = [
       { userId: "user1", username: "Alex", status: "interested" },
     ],
     trailId: "4"
+  },
+  {
+    id: "session4",
+    title: "Initiation au dirt",
+    description: "Session pour débutants qui veulent s'essayer aux bosses à tricks",
+    date: "2023-08-12",
+    time: "14:30",
+    createdBy: "user3",
+    participants: [
+      { userId: "user3", username: "Thomas", status: "going" },
+      { userId: "user7", username: "Léa", status: "going" },
+    ],
+    trailId: "3"
+  },
+  {
+    id: "session5",
+    title: "Session enduro Pro",
+    description: "Réservée aux riders confirmés pour une session enduro intense",
+    date: "2023-09-01",
+    time: "08:00",
+    createdBy: "user5",
+    participants: [
+      { userId: "user5", username: "Simon", status: "going" },
+      { userId: "user8", username: "Paul", status: "going" },
+      { userId: "user9", username: "Emma", status: "interested" },
+    ],
+    trailId: "1"
   }
 ];

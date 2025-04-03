@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -87,6 +86,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
     data: Trail | Event | Session | RegionSummary;
   } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(5);
+  const ZOOM_THRESHOLD = 7; // Zoom level threshold to switch between regions and individual markers
 
   const { toast } = useToast();
   
@@ -122,7 +122,8 @@ const TrailMap: React.FC<TrailMapProps> = ({
     // Listen for zoom events
     map.current.on('zoom', () => {
       if (map.current) {
-        setZoomLevel(map.current.getZoom());
+        const newZoomLevel = map.current.getZoom();
+        setZoomLevel(newZoomLevel);
       }
     });
 
@@ -146,12 +147,12 @@ const TrailMap: React.FC<TrailMapProps> = ({
     regionMarkers.current.forEach(marker => marker.remove());
     regionMarkers.current = [];
     
-    // Show regions (when no region is selected) or markers (when a region is selected)
-    if (selectedRegion) {
-      // Show individual markers for the selected region
+    // If a specific region is selected OR zoom level is above threshold, show individual markers
+    if (selectedRegion || zoomLevel >= ZOOM_THRESHOLD) {
+      // Show individual markers
       if (displayTrails) {
         trails
-          .filter(trail => trail.region === selectedRegion)
+          .filter(trail => !selectedRegion || trail.region === selectedRegion)
           .forEach(trail => {
             addMarker('trail', trail);
           });
@@ -159,7 +160,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
 
       if (displayEvents) {
         events
-          .filter(event => event.region === selectedRegion)
+          .filter(event => !selectedRegion || event.region === selectedRegion)
           .forEach(event => {
             addMarker('event', event);
           });
@@ -168,23 +169,25 @@ const TrailMap: React.FC<TrailMapProps> = ({
       if (displaySessions) {
         mockSessions.forEach(session => {
           const relatedTrail = trails.find(t => t.id === session.trailId);
-          if (relatedTrail && relatedTrail.region === selectedRegion) {
+          if (relatedTrail && (!selectedRegion || relatedTrail.region === selectedRegion)) {
             addMarker('session', session, relatedTrail.coordinates);
           }
         });
       }
       
-      // Zoom in to the selected region
-      const regionData = regions.find(r => r.name === selectedRegion);
-      if (regionData && map.current) {
-        map.current.flyTo({
-          center: regionData.coordinates,
-          zoom: 8,
-          essential: true
-        });
+      // If a region is selected, zoom in to it
+      if (selectedRegion && !userLocation) {
+        const regionData = regions.find(r => r.name === selectedRegion);
+        if (regionData && map.current) {
+          map.current.flyTo({
+            center: regionData.coordinates,
+            zoom: 8,
+            essential: true
+          });
+        }
       }
     } else {
-      // Show region summaries
+      // Show region summaries at lower zoom levels
       regions.forEach(region => {
         addRegionMarker(region);
       });
@@ -205,7 +208,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
     selectedTrail, 
     activeView, 
     selectedRegion,
-    zoomLevel // Added zoom level dependency to refresh markers on zoom
+    zoomLevel // Dependency on zoom level to refresh markers
   ]);
 
   // Center map on user location when available
@@ -292,7 +295,6 @@ const TrailMap: React.FC<TrailMapProps> = ({
     let color: string;
     let title: string;
     let subtitle: string;
-    let icon: JSX.Element;
 
     // Determine coordinates and marker properties based on type
     switch (type) {
@@ -302,7 +304,6 @@ const TrailMap: React.FC<TrailMapProps> = ({
         color = '#16a34a'; // Green
         title = trail.name;
         subtitle = trail.location;
-        icon = <MapPin />;
         break;
       case 'event':
         const event = item as Event;
@@ -310,7 +311,6 @@ const TrailMap: React.FC<TrailMapProps> = ({
         color = '#f59e0b'; // Orange/yellow
         title = event.title;
         subtitle = event.date;
-        icon = <Calendar />;
         break;
       case 'session':
         const session = item as Session;
@@ -318,7 +318,6 @@ const TrailMap: React.FC<TrailMapProps> = ({
         color = '#3b82f6'; // Blue
         title = session.title;
         subtitle = `${session.date} - ${session.time}`;
-        icon = <Users />;
         break;
       default:
         return;

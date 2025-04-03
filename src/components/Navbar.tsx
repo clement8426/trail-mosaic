@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bike, Map, Calendar, Menu, X, LogIn, UserPlus } from 'lucide-react';
+import { Map, Calendar, Menu, X, LogIn, UserPlus, Bell, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,8 +29,9 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-6">
           <NavLink to="/map" icon={<Map size={18} />} label="Carte" />
-          <NavLink to="/trails" icon={<Bike size={18} />} label="Pistes" />
           <NavLink to="/events" icon={<Calendar size={18} />} label="Événements" />
+          <NavLink to="/notifications" icon={<Bell size={18} />} label="Notifications" />
+          <NavLink to="/create-spot" icon={<PlusCircle size={18} />} label="Ajouter un spot" />
           
           {currentUser ? (
             <>
@@ -79,16 +80,23 @@ const Navbar = () => {
             mobile 
           />
           <NavLink 
-            to="/trails" 
-            icon={<Bike size={20} />} 
-            label="Pistes" 
+            to="/events" 
+            icon={<Calendar size={20} />} 
+            label="Événements" 
             onClick={() => setMobileMenuOpen(false)}
             mobile 
           />
           <NavLink 
-            to="/events" 
-            icon={<Calendar size={20} />} 
-            label="Événements" 
+            to="/notifications" 
+            icon={<Bell size={20} />} 
+            label="Notifications" 
+            onClick={() => setMobileMenuOpen(false)}
+            mobile 
+          />
+          <NavLink 
+            to="/create-spot" 
+            icon={<PlusCircle size={20} />} 
+            label="Ajouter un spot" 
             onClick={() => setMobileMenuOpen(false)}
             mobile 
           />

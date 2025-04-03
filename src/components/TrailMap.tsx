@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -122,8 +123,10 @@ const TrailMap: React.FC<TrailMapProps> = ({
     // Listen for zoom events
     map.current.on('zoom', () => {
       if (map.current) {
-        const newZoomLevel = map.current.getZoom();
-        setZoomLevel(newZoomLevel);
+        const newZoomLevel = Math.floor(map.current.getZoom());
+        if (newZoomLevel !== zoomLevel) {
+          setZoomLevel(newZoomLevel);
+        }
       }
     });
 
@@ -141,6 +144,8 @@ const TrailMap: React.FC<TrailMapProps> = ({
   useEffect(() => {
     if (!mapLoaded || !map.current) return;
     
+    console.log("Updating markers, zoom level:", zoomLevel);
+    
     // Clear existing markers
     markers.current.forEach(marker => marker.remove());
     markers.current = [];
@@ -149,6 +154,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
     
     // If a specific region is selected OR zoom level is above threshold, show individual markers
     if (selectedRegion || zoomLevel >= ZOOM_THRESHOLD) {
+      console.log("Showing individual markers");
       // Show individual markers
       if (displayTrails) {
         trails
@@ -187,6 +193,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
         }
       }
     } else {
+      console.log("Showing region markers");
       // Show region summaries at lower zoom levels
       regions.forEach(region => {
         addRegionMarker(region);
@@ -589,6 +596,11 @@ const TrailMap: React.FC<TrailMapProps> = ({
           )}
         </div>
       )}
+      
+      {/* Debug display for zoom level - helpful for development */}
+      <div className="absolute bottom-4 left-4 bg-white px-2 py-1 rounded shadow text-xs">
+        Zoom: {zoomLevel}
+      </div>
     </div>
   );
 };

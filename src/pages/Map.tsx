@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { trails } from "@/data/trailsData";
 import { events } from "@/data/eventsData";
+import { sessions } from "@/data/sessionsData";
 import { Trail, Event, Session, BikeType, TrailType, DifficultyLevel } from "@/types";
 import TrailMap from "@/components/TrailMap";
 import FilterBar from "@/components/FilterBar";
@@ -11,35 +12,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import haversineDistance from "haversine-distance";
 import { useToast } from "@/hooks/use-toast";
-
-const mockSessions: Session[] = [
-  {
-    id: "session1",
-    title: "Sortie groupe intermédiaire",
-    description: "Session de groupe pour riders intermédiaires",
-    date: "2023-07-15",
-    time: "14:00",
-    createdBy: "user1",
-    participants: [
-      { userId: "user1", username: "Alex", status: "going" },
-      { userId: "user2", username: "Marine", status: "going" },
-    ],
-    trailId: "trail1"
-  },
-  {
-    id: "session2",
-    title: "Entraînement technique",
-    description: "Focus sur les sauts et les virages relevés",
-    date: "2023-07-20",
-    time: "10:00",
-    createdBy: "user3",
-    participants: [
-      { userId: "user3", username: "Thomas", status: "going" },
-      { userId: "user4", username: "Julie", status: "interested" },
-    ],
-    trailId: "trail2"
-  }
-];
 
 const Map: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -59,7 +31,7 @@ const Map: React.FC = () => {
   
   const [filteredTrails, setFilteredTrails] = useState<Trail[]>(trails);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>(events);
-  const [filteredSessions, setFilteredSessions] = useState<Session[]>(mockSessions);
+  const [filteredSessions, setFilteredSessions] = useState<Session[]>(sessions);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -162,7 +134,7 @@ const Map: React.FC = () => {
 
     setFilteredEvents(eventResults);
 
-    let sessionResults = mockSessions.filter(session => {
+    let sessionResults = sessions.filter(session => {
       const matchesSearch = searchTerm === "" || 
         session.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         session.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -207,6 +179,10 @@ const Map: React.FC = () => {
   }, [searchTerm, filters, selectedRegion]);
 
   const getEventCoordinates = (event: Event): [number, number] => {
+    if (event.coordinates) {
+      return event.coordinates;
+    }
+    
     const mockCoords: {[key: string]: [number, number]} = {
       "Parc National des Cévennes": [3.6, 44.2],
       "Montpellier": [3.8767, 43.6108],

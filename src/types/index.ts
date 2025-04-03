@@ -1,12 +1,12 @@
 
-export type BikeType = 'BMX' | 'Semi-rigide' | 'Tout-suspendu' | 'Tous';
-
-export type TrailType = 'Descente' | 'Terrain de bosses' | 'Bosses à tricks';
-
-export type DifficultyLevel = 'Débutant' | 'Intermédiaire' | 'Avancé' | 'Expert';
+// Trail types
+export type DifficultyLevel = 'Débutant' | 'Intermédiaire' | 'Avancé' | 'Expert' | 'Tous';
+export type TrailType = 'Descente' | 'Cross-country' | 'Enduro' | 'Terrain de bosses' | 'Bosses à tricks' | 'Tous';
+export type BikeType = 'BMX' | 'Semi-rigide' | 'Tout-suspendu' | 'Enduro' | 'DH' | 'Tous';
+export type ObstacleType = 'Rock garden' | 'Drop' | 'Gap' | 'Northshore' | 'Saut' | 'Bosse' | 'Virage serré' | 'Passerelle';
 
 export interface Obstacle {
-  type: 'Bosse' | 'Virage serré' | 'Saut' | 'Gap' | 'Drop' | 'Northshore' | 'Rock garden';
+  type: ObstacleType;
   description: string;
 }
 
@@ -14,40 +14,41 @@ export interface Trail {
   id: string;
   name: string;
   location: string;
-  coordinates: [number, number]; // [longitude, latitude]
+  coordinates: [number, number];
   description: string;
   imageUrl: string;
-  distance: number; // in kilometers
-  elevation: number; // in meters
+  distance: number;
+  elevation: number;
   difficulty: DifficultyLevel;
   trailType: TrailType;
   recommendedBikes: BikeType[];
   obstacles: Obstacle[];
-  rating: number; // out of 5
-  reviews: number; // number of reviews
-  createdBy?: string; // ID of the user who created the trail
-  createdAt?: string; // Date of creation
-  contributors?: Contributor[]; // List of users who contributed to this trail
-  comments?: Comment[]; // List of comments
-  sessions?: Session[]; // List of ride sessions
-  region?: string; // Region name for clustering
+  rating: number;
+  reviews: number;
+  region?: string;
+  distance?: number; // For display when sorting by distance
 }
 
-export interface Contributor {
-  userId: string;
-  username: string;
-  action: 'created' | 'edited' | 'added_photo' | 'reported';
-  timestamp: string;
-  details?: string;
-}
-
-export interface Comment {
+// Event types
+export interface Event {
   id: string;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  imageUrl: string;
+  category: string;
+  trailId: string;
+  coordinates?: [number, number];
+  region?: string;
+  distance?: number; // For display when sorting by distance
+}
+
+// Session types
+export interface SessionParticipant {
   userId: string;
   username: string;
-  text: string;
-  timestamp: string;
-  rating?: number; // Optional rating between 1-5
+  status: 'going' | 'interested' | 'maybe';
 }
 
 export interface Session {
@@ -57,68 +58,25 @@ export interface Session {
   date: string;
   time: string;
   createdBy: string;
-  participants: {
-    userId: string;
-    username: string;
-    status: 'going' | 'interested' | 'not_going';
-  }[];
-  trailId: string; // Reference to the trail/spot this session belongs to
-  distance?: number; // Distance from user location, calculated dynamically
+  participants: SessionParticipant[];
+  trailId: string;
+  distance?: number; // For display when sorting by distance
 }
 
-export interface Event {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  location: string;
-  imageUrl: string;
-  category: 'Compétition' | 'Rassemblement' | 'Formation';
-  trailId?: string; // Reference to a trail
-  coordinates?: [number, number]; // [longitude, latitude]
-  distance?: number; // Distance from user location, calculated dynamically
-  region?: string; // Region name for clustering
-}
-
+// User types
 export interface User {
   id: string;
+  username: string;
   email: string;
-  username: string;
-  photoURL?: string;
-  createdAt: string;
-  favorites: string[]; // Trail IDs
-  contributions?: Contributor[]; // Contributions made by user
-  notifications?: Notification[]; // Notifications for user
+  profilePicture: string;
+  bio: string;
+  level: string;
+  preferredBikes: BikeType[];
+  favoriteTrails: string[];
+  location: string;
 }
 
-export interface Notification {
-  id: string;
-  type: 'session' | 'contribution' | 'comment' | 'favorite';
-  message: string;
-  timestamp: string;
-  read: boolean;
-  trailId?: string;
-  sessionId?: string;
-}
-
-export interface TrailModification {
-  id: string;
-  trailId: string;
-  userId: string;
-  username: string;
-  timestamp: string;
-  status: 'pending' | 'approved' | 'rejected';
-  changes: {
-    field: string;
-    oldValue: any;
-    newValue: any;
-  }[];
-  votes: {
-    userId: string;
-    vote: 'up' | 'down';
-  }[];
-}
-
+// Region summary
 export interface RegionSummary {
   name: string;
   coordinates: [number, number];
@@ -126,3 +84,8 @@ export interface RegionSummary {
   eventCount: number;
   sessionCount: number;
 }
+
+// For routes that check authentication
+export type ProtectedRouteProps = {
+  children: React.ReactNode;
+};

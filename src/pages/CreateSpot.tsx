@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -7,6 +7,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { v4 as uuidv4 } from "uuid";
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
 import {
   Form,
@@ -22,8 +26,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import Navbar from "@/components/Navbar";
 import { Trail, BikeType, DifficultyLevel, TrailType, Obstacle } from "@/types";
-import { trails } from "@/data/trailsData";
 import { MapPin } from "lucide-react";
+
+// Set your Mapbox access token
+mapboxgl.accessToken = 'pk.eyJ1IjoiY2xlbTg0MjYiLCJhIjoiY2x1bDUxcmNwMHE4ZzJrcGg3eWVnamR0NyJ9.0b5j0eigjauA52msWlo3WQ';
 
 // Définition du schéma de validation avec Zod
 const trailFormSchema = z.object({
@@ -52,6 +58,10 @@ const CreateSpot = () => {
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
   const [obstacleType, setObstacleType] = useState<Obstacle["type"]>("Bosse");
   const [obstacleDescription, setObstacleDescription] = useState("");
+  const [address, setAddress] = useState("");
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const marker = useRef<mapboxgl.Marker | null>(null);
 
   const form = useForm<TrailFormValues>({
     resolver: zodResolver(trailFormSchema),
@@ -68,6 +78,96 @@ const CreateSpot = () => {
       legalConsent: false,
     },
   });
+
+  // Initialize map when component mounts
+  useEffect(() => {
+    if (!mapContainer.current) return;
+
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/outdoors-v12',
+      center: mapCoordinates,
+      zoom: 12
+    });
+
+    map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+    
+    // Add geocoder (search) control
+    const geocoder = new MapboxGeocoder({
+      accessToken: mapboxgl.accessToken,
+      mapboxgl: mapboxgl,
+      placeholder: 'Rechercher une adresse',
+      language: 'fr',
+      countries: 'fr',
+      marker: false
+    });
+
+    map.current.addControl(geocoder, 'top-left');
+    
+    // Add marker at the initial location
+    marker.current = new mapboxgl.Marker({ draggable: true, color: '#16a34a' })
+      .setLngLat(mapCoordinates)
+      .addTo(map.current);
+
+    // Function to update form location and coordinates when marker is moved
+    const updateLocationFromMarker = () => {
+      if (!marker.current) return;
+      
+      const lngLat = marker.current.getLngLat();
+      setMapCoordinates([lngLat.lng, lngLat.lat]);
+      
+      // Reverse geocode to get address
+      fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lngLat.lng},${lngLat.lat}.json?access_token=${mapboxgl.accessToken}&language=fr`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.features && data.features.length > 0) {
+            const locationName = data.features[0].place_name;
+            form.setValue('location', locationName);
+            setAddress(locationName);
+          }
+        })
+        .catch(error => {
+          console.error('Error during reverse geocoding:', error);
+        });
+    };
+
+    // Update location when marker drag ends
+    marker.current.on('dragend', updateLocationFromMarker);
+
+    // Listen for clicks on the map to move the marker
+    map.current.on('click', (e) => {
+      if (!marker.current || !map.current) return;
+      
+      marker.current.setLngLat([e.lngLat.lng, e.lngLat.lat]);
+      updateLocationFromMarker();
+    });
+
+    // Listen for selection in the geocoder
+    geocoder.on('result', (e) => {
+      if (!marker.current || !map.current) return;
+      
+      const coords = e.result.center;
+      marker.current.setLngLat(coords);
+      setMapCoordinates([coords[0], coords[1]]);
+      
+      const locationName = e.result.place_name;
+      form.setValue('location', locationName);
+      setAddress(locationName);
+      
+      map.current.flyTo({
+        center: coords,
+        zoom: 14,
+        essential: true
+      });
+    });
+
+    // Clean up on unmount
+    return () => {
+      if (map.current) {
+        map.current.remove();
+      }
+    };
+  }, []);
 
   // Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
   if (!currentUser) {
@@ -99,6 +199,43 @@ const CreateSpot = () => {
     setObstacles(obstacles.filter((_, i) => i !== index));
   };
 
+  // Géolocaliser l'utilisateur
+  const getUserLocation = () => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const userCoords: [number, number] = [position.coords.longitude, position.coords.latitude];
+        setMapCoordinates(userCoords);
+        
+        if (map.current && marker.current) {
+          marker.current.setLngLat(userCoords);
+          map.current.flyTo({
+            center: userCoords,
+            zoom: 14,
+            essential: true
+          });
+          
+          // Reverse geocode to get address
+          fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${userCoords[0]},${userCoords[1]}.json?access_token=${mapboxgl.accessToken}&language=fr`)
+            .then(response => response.json())
+            .then(data => {
+              if (data.features && data.features.length > 0) {
+                const locationName = data.features[0].place_name;
+                form.setValue('location', locationName);
+                setAddress(locationName);
+              }
+            })
+            .catch(error => {
+              console.error('Error during reverse geocoding:', error);
+            });
+        }
+        
+        toast.success("Position actuelle utilisée");
+      },
+      () => toast.error("Impossible d'obtenir votre position"),
+      { enableHighAccuracy: true }
+    );
+  };
+
   // Simuler l'ajout d'un spot (dans un projet réel, ce serait une requête à une API)
   const onSubmit = (data: TrailFormValues) => {
     // Créer un nouvel objet trail
@@ -127,13 +264,11 @@ const CreateSpot = () => {
           timestamp: new Date().toISOString(),
         },
       ],
+      region: "Déterminer automatiquement à partir des coordonnées", // Déterminer la région à partir des coordonnées
     };
 
     // Dans un projet réel, on enverrait cette donnée à une API
     console.log("Nouveau spot créé:", newTrail);
-
-    // Simuler l'ajout à la liste des trails (dans un projet réel, cela serait géré par le backend)
-    // trails.push(newTrail);
 
     toast.success("Spot créé avec succès!");
     navigate("/");
@@ -177,21 +312,21 @@ const CreateSpot = () => {
                       <FormLabel>Localisation</FormLabel>
                       <FormControl>
                         <div className="flex gap-2">
-                          <Input placeholder="Ex: Parc National des Cévennes" {...field} className="flex-1" />
+                          <Input 
+                            placeholder="Ex: Parc National des Cévennes" 
+                            {...field} 
+                            className="flex-1"
+                            value={address || field.value}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              setAddress(e.target.value);
+                            }}
+                          />
                           <Button 
                             type="button" 
                             variant="outline"
                             className="flex gap-2"
-                            onClick={() => {
-                              navigator.geolocation.getCurrentPosition(
-                                (position) => {
-                                  setMapCoordinates([position.coords.longitude, position.coords.latitude]);
-                                  toast.success("Position actuelle utilisée");
-                                },
-                                () => toast.error("Impossible d'obtenir votre position"),
-                                { enableHighAccuracy: true }
-                              );
-                            }}
+                            onClick={getUserLocation}
                           >
                             <MapPin size={16} />
                             Ma position
@@ -203,12 +338,16 @@ const CreateSpot = () => {
                   )}
                 />
 
-                {/* Carte (placeholder) */}
-                <div className="rounded-lg overflow-hidden bg-gray-100 h-64 flex items-center justify-center">
-                  <div className="text-center p-4">
-                    <p className="text-gray-500 mb-2">Cliquez sur la carte pour définir la position du spot</p>
-                    <p className="text-sm text-gray-400">Coordonnées actuelles: {mapCoordinates[0]}, {mapCoordinates[1]}</p>
+                {/* Carte Mapbox */}
+                <div className="rounded-lg overflow-hidden bg-gray-100 h-64">
+                  <div ref={mapContainer} className="w-full h-full" />
+                </div>
+                <div className="text-sm text-gray-500">
+                  <div className="flex items-center gap-1">
+                    <MapPin size={14} className="text-forest" />
+                    <span>Coordonnées: {mapCoordinates[0].toFixed(6)}, {mapCoordinates[1].toFixed(6)}</span>
                   </div>
+                  <p className="mt-1">Cliquez sur la carte ou utilisez la barre de recherche pour choisir l'emplacement exact du spot.</p>
                 </div>
                 
                 {/* Description */}

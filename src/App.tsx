@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import CreateSpot from "./pages/CreateSpot";
 import SpotDetail from "./pages/SpotDetail";
 import Notifications from "./pages/Notifications";
+import Events from "./pages/Events";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,7 +34,8 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/create-spot" element={<CreateSpot />} />
             <Route path="/spots/:id" element={<SpotDetail />} />
-            <Route path="/notifications" element={<Notifications />} /> 
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/events" element={<Events />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

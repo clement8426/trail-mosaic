@@ -1,15 +1,17 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Star, Heart, HeartOff, MessageSquare, Calendar, MapPin } from "lucide-react";
+import { Star, Heart, MessageSquare, Calendar, MapPin, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/Navbar";
-import { Trail, Comment, Session } from "@/types";
+import { Trail, Comment, Session, Event } from "@/types";
 import { trails } from "@/data/trailsData";
+import { events } from "@/data/eventsData";
 
 const SpotDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +19,7 @@ const SpotDetail = () => {
   const navigate = useNavigate();
 
   const [trail, setTrail] = useState<Trail | null>(null);
+  const [trailEvents, setTrailEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -39,6 +42,10 @@ const SpotDetail = () => {
       };
       
       setTrail(enhancedTrail);
+      
+      // Fetch events related to this trail
+      const relatedEvents = events.filter(event => event.trailId === fetchedTrail.id);
+      setTrailEvents(relatedEvents);
       
       if (currentUser && currentUser.favorites) {
         setIsFavorite(currentUser.favorites.includes(fetchedTrail.id));
@@ -145,7 +152,7 @@ const SpotDetail = () => {
     toast.success("Session ajoutée");
   };
 
-  const handleParticipateSession = (sessionId: string, status: "going" | "interested" | "not_going") => {
+  const handleParticipateSession = (sessionId: string, status: "going" | "interested" | "maybe") => {
     if (!currentUser) {
       navigate("/login");
       return;
@@ -225,6 +232,15 @@ const SpotDetail = () => {
       case 'Expert': return 'bg-black';
       default: return 'bg-gray-500';
     }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return new Intl.DateTimeFormat('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(date);
   };
 
   return (
@@ -328,6 +344,41 @@ const SpotDetail = () => {
               </CardContent>
             </Card>
             
+            {/* Events Card */}
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-xl font-bold mb-4">
+                  Événements sur ce spot
+                </h2>
+                
+                {trailEvents && trailEvents.length > 0 ? (
+                  <div className="space-y-4">
+                    {trailEvents.map((event) => (
+                      <div key={event.id} className="border rounded-md p-4 hover:bg-gray-50 transition-colors">
+                        <h3 className="font-bold text-forest">{event.title}</h3>
+                        <div className="flex items-center text-gray-600 text-sm mt-1 mb-2">
+                          <Calendar size={14} className="mr-1" />
+                          {formatDate(event.date)}
+                        </div>
+                        <p className="text-sm text-gray-700 mb-3">{event.description}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs">
+                            {event.category}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {event.location}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">Aucun événement n'est prévu sur ce spot pour le moment.</p>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Sessions Card */}
             <Card>
               <CardContent className="p-6">
                 <h2 className="text-xl font-bold mb-4">Sessions de ride</h2>

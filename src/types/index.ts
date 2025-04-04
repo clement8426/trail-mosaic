@@ -41,10 +41,10 @@ export interface Trail {
   rating: number;
   reviews: number;
   region?: string;
-  // Additional optional properties used in the app
   comments?: Comment[];
   sessions?: Session[];
   contributors?: Contributor[];
+  createdBy?: string;
 }
 
 // Event types

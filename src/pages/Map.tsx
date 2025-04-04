@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { trails } from "@/data/trailsData";
@@ -58,7 +59,20 @@ const Map: React.FC = () => {
   }, [toast]);
 
   useEffect(() => {
-    let trailResults = trails.filter(trail => {
+    // Filter trails based on the active view and other filters
+    let trailResults = trails;
+    
+    // If we're in events or sessions view, only show spots with events or sessions
+    if (activeView === "events") {
+      const trailsWithEvents = events.map(event => event.trailId);
+      trailResults = trails.filter(trail => trailsWithEvents.includes(trail.id));
+    } else if (activeView === "sessions") {
+      const trailsWithSessions = sessions.map(session => session.trailId);
+      trailResults = trails.filter(trail => trailsWithSessions.includes(trail.id));
+    }
+    
+    // Apply the standard filters
+    trailResults = trailResults.filter(trail => {
       const matchesSearch = searchTerm === "" || 
         trail.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         trail.location.toLowerCase().includes(searchTerm.toLowerCase());
@@ -74,15 +88,7 @@ const Map: React.FC = () => {
       const matchesBike = filters.bikeType === "Tous" || 
         trail.recommendedBikes.includes(filters.bikeType);
 
-      if (activeView === "events") {
-        const hasEvents = events.some(event => event.trailId === trail.id);
-        return matchesSearch && matchesRegion && hasEvents;
-      } else if (activeView === "sessions") {
-        const hasSessions = sessions.some(session => session.trailId === trail.id);
-        return matchesSearch && matchesRegion && hasSessions;
-      } else {
-        return matchesSearch && matchesDifficulty && matchesType && matchesBike && matchesRegion;
-      }
+      return matchesSearch && matchesDifficulty && matchesType && matchesBike && matchesRegion;
     });
 
     if (filters.location) {
@@ -108,6 +114,7 @@ const Map: React.FC = () => {
 
     setFilteredTrails(trailResults);
 
+    // Filter events based on search and region
     let eventResults = events.filter(event => {
       const matchesSearch = searchTerm === "" || 
         event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -143,6 +150,7 @@ const Map: React.FC = () => {
 
     setFilteredEvents(eventResults);
 
+    // Filter sessions based on search and region
     let sessionResults = sessions.filter(session => {
       const matchesSearch = searchTerm === "" || 
         session.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

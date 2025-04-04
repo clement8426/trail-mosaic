@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -258,10 +257,9 @@ const CreateSpot = () => {
       createdAt: new Date().toISOString(),
       contributors: [
         {
-          userId: currentUser.id,
           username: currentUser.username,
-          action: "created",
-          timestamp: new Date().toISOString(),
+          action: 'created',
+          timestamp: new Date().toISOString()
         },
       ],
       region: "Déterminer automatiquement à partir des coordonnées", // Déterminer la région à partir des coordonnées

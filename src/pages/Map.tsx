@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { trails } from "@/data/trailsData";
@@ -12,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import haversineDistance from "haversine-distance";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 
 const Map: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -288,7 +290,7 @@ const Map: React.FC = () => {
                             <div className="w-16 h-16 rounded-md overflow-hidden flex-shrink-0">
                               <img src={trail.imageUrl} alt={trail.name} className="w-full h-full object-cover" />
                             </div>
-                            <div>
+                            <div className="flex-1">
                               <h3 className="font-medium">{trail.name}</h3>
                               <p className="text-sm text-gray-500">{trail.location}</p>
                               <div className="flex items-center gap-2 mt-1 text-xs">
@@ -304,6 +306,13 @@ const Map: React.FC = () => {
                                 {"distance" in trail && (
                                   <span className="ml-auto font-medium">{trail.distance} km</span>
                                 )}
+                              </div>
+                              <div className="mt-2 text-right">
+                                <Link to={`/spots/${trail.id}`}>
+                                  <Button size="sm" variant="outline" className="text-forest border-forest hover:bg-forest/10">
+                                    Voir le spot
+                                  </Button>
+                                </Link>
                               </div>
                             </div>
                           </div>
@@ -326,7 +335,13 @@ const Map: React.FC = () => {
                       filteredEvents.map(event => (
                         <div 
                           key={event.id}
-                          className="border rounded-lg p-3 cursor-pointer hover:border-gray-300 transition-colors"
+                          className="border rounded-lg p-3 transition-colors hover:border-gray-300"
+                          onClick={() => {
+                            // When clicking an event, select its trail
+                            if (event.trailId) {
+                              setSelectedTrailId(event.trailId);
+                            }
+                          }}
                         >
                           <div className="aspect-video mb-2 rounded-md overflow-hidden">
                             <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />
@@ -334,13 +349,20 @@ const Map: React.FC = () => {
                           <h3 className="font-medium">{event.title}</h3>
                           <p className="text-sm text-gray-500">{formatDate(event.date)}</p>
                           <p className="text-sm text-gray-500">{event.location}</p>
-                          {"distance" in event && (
-                            <div className="text-right mt-1">
+                          <div className="flex justify-between items-center mt-2">
+                            {"distance" in event && (
                               <span className="text-xs font-medium px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">
                                 {event.distance} km
                               </span>
-                            </div>
-                          )}
+                            )}
+                            {event.trailId && (
+                              <Link to={`/spots/${event.trailId}`}>
+                                <Button size="sm" variant="outline" className="text-amber-600 border-amber-600 hover:bg-amber-50">
+                                  Voir le spot
+                                </Button>
+                              </Link>
+                            )}
+                          </div>
                         </div>
                       ))
                     )}
@@ -363,7 +385,11 @@ const Map: React.FC = () => {
                         return (
                           <div 
                             key={session.id}
-                            className="border rounded-lg p-3 cursor-pointer hover:border-gray-300 transition-colors"
+                            className="border rounded-lg p-3 transition-colors hover:border-gray-300"
+                            onClick={() => {
+                              // When clicking a session, select its trail
+                              setSelectedTrailId(session.trailId);
+                            }}
                           >
                             <h3 className="font-medium">{session.title}</h3>
                             <p className="text-sm text-gray-500">{formatDate(session.date)} à {session.time}</p>
@@ -372,29 +398,38 @@ const Map: React.FC = () => {
                                 {relatedTrail.name}, {relatedTrail.location}
                               </p>
                             )}
-                            <div className="flex items-center gap-1 mt-2">
-                              <div className="flex -space-x-1">
-                                {session.participants.slice(0, 3).map((p, idx) => (
-                                  <div 
-                                    key={p.userId}
-                                    className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs font-medium border-2 border-white"
-                                  >
-                                    {p.username.charAt(0)}
-                                  </div>
-                                ))}
+                            <div className="flex items-center justify-between mt-2">
+                              <div className="flex items-center gap-1">
+                                <div className="flex -space-x-1">
+                                  {session.participants.slice(0, 3).map((p, idx) => (
+                                    <div 
+                                      key={p.userId}
+                                      className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs font-medium border-2 border-white"
+                                    >
+                                      {p.username.charAt(0)}
+                                    </div>
+                                  ))}
+                                </div>
+                                {session.participants.length > 3 && (
+                                  <span className="text-xs text-gray-500">
+                                    +{session.participants.length - 3}
+                                  </span>
+                                )}
                               </div>
-                              {session.participants.length > 3 && (
-                                <span className="text-xs text-gray-500">
-                                  +{session.participants.length - 3}
-                                </span>
-                              )}
-                              {'distance' in session && session.distance !== undefined && (
-                                <div className="ml-auto">
+                              
+                              <div className="flex items-center gap-2">
+                                {'distance' in session && session.distance !== undefined && (
                                   <span className="text-xs font-medium px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
                                     {session.distance} km
                                   </span>
-                                </div>
-                              )}
+                                )}
+                                
+                                <Link to={`/spots/${session.trailId}`}>
+                                  <Button size="sm" variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50">
+                                    Voir le spot
+                                  </Button>
+                                </Link>
+                              </div>
                             </div>
                           </div>
                         );

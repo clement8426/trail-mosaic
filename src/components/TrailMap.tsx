@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -322,20 +323,32 @@ const TrailMap: React.FC<TrailMapProps> = ({
     // Fly to item location
     if (map.current) {
       let coords: [number, number];
+      let trailId: string;
       
       switch (type) {
         case 'trail':
           coords = (item as Trail).coordinates;
+          trailId = (item as Trail).id;
           break;
         case 'event':
-          coords = getEventCoordinates(item as Event);
+          // For events, find the associated trail and zoom to it
+          trailId = (item as Event).trailId;
+          const eventTrail = trails.find(t => t.id === trailId);
+          coords = eventTrail ? eventTrail.coordinates : getEventCoordinates(item as Event);
           break;
         case 'session':
-          const sessionTrail = trails.find(t => t.id === (item as Session).trailId);
+          // For sessions, find the associated trail and zoom to it
+          trailId = (item as Session).trailId;
+          const sessionTrail = trails.find(t => t.id === trailId);
           coords = sessionTrail ? sessionTrail.coordinates : [0, 0];
           break;
         default:
           return;
+      }
+      
+      // If we have an onTrailSelect callback, call it with the trail ID
+      if (onTrailSelect && (type === 'event' || type === 'session')) {
+        onTrailSelect(trailId);
       }
       
       map.current.flyTo({
@@ -470,7 +483,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
               {(selectedItem.data as Event).trailId && (
                 <Link to={`/spots/${(selectedItem.data as Event).trailId}`}>
                   <Button 
-                    className="w-full bg-trail text-white py-2 rounded mt-3 text-sm font-medium hover:bg-trail/80 transition-colors"
+                    className="w-full bg-amber-500 text-white py-2 rounded mt-3 text-sm font-medium hover:bg-amber-600 transition-colors"
                   >
                     Voir le spot associé
                   </Button>

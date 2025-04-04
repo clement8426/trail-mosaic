@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -27,6 +26,8 @@ interface TrailMapProps {
   selectedRegion?: string | null;
   activeView?: 'all' | 'trails' | 'events' | 'sessions';
 }
+
+type MarkerType = 'trail' | 'trail-event' | 'trail-session' | 'trail-event-session';
 
 const TrailMap: React.FC<TrailMapProps> = ({ 
   selectedTrail, 
@@ -120,7 +121,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
           const trailSessions = sessions.filter(session => session.trailId === trail.id);
           
           // Determine marker type based on associations
-          let markerType = 'trail';
+          let markerType: MarkerType = 'trail';
           if (trailEvents.length > 0 && trailSessions.length > 0) {
             markerType = 'trail-event-session';
           } else if (trailEvents.length > 0) {
@@ -178,7 +179,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
 
   const addTrailMarker = (
     trail: Trail, 
-    type: 'trail' | 'trail-event' | 'trail-session' | 'trail-event-session',
+    type: MarkerType,
     trailEvents: Event[],
     trailSessions: Session[]
   ) => {

@@ -10,6 +10,21 @@ export interface Obstacle {
   description: string;
 }
 
+export interface Comment {
+  id: string;
+  userId: string;
+  username: string;
+  text: string;
+  timestamp: string;
+  rating?: number;
+}
+
+export interface Contributor {
+  username: string;
+  action: 'created' | 'edited' | 'added_photo' | 'reported';
+  timestamp: string;
+}
+
 export interface Trail {
   id: string;
   name: string;
@@ -26,7 +41,10 @@ export interface Trail {
   rating: number;
   reviews: number;
   region?: string;
-  distance?: number; // For display when sorting by distance
+  // Additional optional properties used in the app
+  comments?: Comment[];
+  sessions?: Session[];
+  contributors?: Contributor[];
 }
 
 // Event types
@@ -68,12 +86,14 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  profilePicture: string;
-  bio: string;
-  level: string;
-  preferredBikes: BikeType[];
-  favoriteTrails: string[];
-  location: string;
+  profilePicture?: string;
+  photoURL?: string; // Used for profile pictures in auth context
+  bio?: string;
+  level?: string;
+  preferredBikes?: BikeType[];
+  favorites?: string[];
+  location?: string;
+  createdAt?: string; // Used for tracking when user joined
 }
 
 // Region summary

@@ -56,11 +56,14 @@ const Profile = () => {
             <div>
               <h3 className="font-medium text-forest mb-2">Membre depuis</h3>
               <p className="text-gray-600">
-                {new Date(currentUser.createdAt).toLocaleDateString('fr-FR', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
+                {currentUser.createdAt ? 
+                  new Date(currentUser.createdAt).toLocaleDateString('fr-FR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  }) : 
+                  "Information non disponible"
+                }
               </p>
             </div>
             

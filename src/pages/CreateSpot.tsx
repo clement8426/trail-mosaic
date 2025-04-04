@@ -239,30 +239,22 @@ const CreateSpot = () => {
   const onSubmit = (data: TrailFormValues) => {
     // Créer un nouvel objet trail
     const newTrail: Trail = {
-      id: uuidv4(), // Générer un ID unique
+      id: uuidv4(),
       name: data.name,
       location: data.location,
-      coordinates: mapCoordinates,
+      coordinates: [parseFloat(data.longitude), parseFloat(data.latitude)],
       description: data.description,
-      imageUrl: data.imageUrl,
-      distance: data.distance,
-      elevation: data.elevation,
+      imageUrl: data.imageUrl || "https://images.unsplash.com/photo-1682687220063-4742bd7fd538?q=80&w=2070&auto=format&fit=crop",
+      distance: parseFloat(data.distance),
+      elevation: parseFloat(data.elevation),
       difficulty: data.difficulty as DifficultyLevel,
       trailType: data.trailType as TrailType,
       recommendedBikes: data.recommendedBikes as BikeType[],
       obstacles: obstacles,
       rating: 0,
       reviews: 0,
-      createdBy: currentUser.id,
-      createdAt: new Date().toISOString(),
-      contributors: [
-        {
-          username: currentUser.username,
-          action: 'created',
-          timestamp: new Date().toISOString()
-        },
-      ],
-      region: "Déterminer automatiquement à partir des coordonnées", // Déterminer la région à partir des coordonnées
+      region: data.region,
+      createdBy: currentUser?.id,
     };
 
     // Dans un projet réel, on enverrait cette donnée à une API

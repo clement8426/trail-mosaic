@@ -68,5 +68,32 @@ export const sessions: Session[] = [
       { userId: "user9", username: "Emma", status: "interested" },
     ],
     trailId: "1"
+  },
+  {
+    id: "session6",
+    title: "Week-end descente",
+    description: "Session complète sur 2 jours pour progresser en descente",
+    date: "2023-10-15",
+    time: "09:00",
+    createdBy: "user3",
+    participants: [
+      { userId: "user3", username: "Thomas", status: "going" },
+      { userId: "user5", username: "Simon", status: "interested" },
+    ],
+    trailId: "5"
+  },
+  {
+    id: "session7",
+    title: "Technique en forêt",
+    description: "Travail sur les passages techniques en sous-bois",
+    date: "2023-11-05",
+    time: "10:30",
+    createdBy: "user1",
+    participants: [
+      { userId: "user1", username: "Alex", status: "going" },
+      { userId: "user2", username: "Marine", status: "going" },
+      { userId: "user7", username: "Léa", status: "interested" },
+    ],
+    trailId: "6"
   }
 ];

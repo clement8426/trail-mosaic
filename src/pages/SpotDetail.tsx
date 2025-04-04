@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import { Trail, Comment, Session, Event } from "@/types";
 import { trails } from "@/data/trailsData";
 import { events } from "@/data/eventsData";
+import { sessions } from "@/data/sessionsData";
 
 const SpotDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +20,7 @@ const SpotDetail = () => {
 
   const [trail, setTrail] = useState<Trail | null>(null);
   const [trailEvents, setTrailEvents] = useState<Event[]>([]);
+  const [trailSessions, setTrailSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -43,9 +44,11 @@ const SpotDetail = () => {
       
       setTrail(enhancedTrail);
       
-      // Fetch events related to this trail
       const relatedEvents = events.filter(event => event.trailId === fetchedTrail.id);
       setTrailEvents(relatedEvents);
+      
+      const relatedSessions = sessions.filter(session => session.trailId === fetchedTrail.id);
+      setTrailSessions(relatedSessions);
       
       if (currentUser && currentUser.favorites) {
         setIsFavorite(currentUser.favorites.includes(fetchedTrail.id));
@@ -140,10 +143,7 @@ const SpotDetail = () => {
       trailId: trail.id
     };
 
-    setTrail({
-      ...trail,
-      sessions: [...(trail.sessions || []), newSession],
-    });
+    setTrailSessions([...trailSessions, newSession]);
 
     setSessionTitle("");
     setSessionDate("");
@@ -158,9 +158,7 @@ const SpotDetail = () => {
       return;
     }
 
-    if (!trail) return;
-
-    const updatedSessions = trail.sessions?.map((session) => {
+    const updatedSessions = trailSessions.map((session) => {
       if (session.id === sessionId) {
         const existingParticipant = session.participants.find(
           (p) => p.userId === currentUser.id
@@ -190,11 +188,7 @@ const SpotDetail = () => {
       return session;
     });
 
-    setTrail({
-      ...trail,
-      sessions: updatedSessions,
-    });
-
+    setTrailSessions(updatedSessions);
     toast.success(`Votre participation a été mise à jour`);
   };
 
@@ -344,7 +338,6 @@ const SpotDetail = () => {
               </CardContent>
             </Card>
             
-            {/* Events Card */}
             <Card>
               <CardContent className="p-6">
                 <h2 className="text-xl font-bold mb-4">
@@ -378,7 +371,6 @@ const SpotDetail = () => {
               </CardContent>
             </Card>
             
-            {/* Sessions Card */}
             <Card>
               <CardContent className="p-6">
                 <h2 className="text-xl font-bold mb-4">Sessions de ride</h2>
@@ -441,20 +433,16 @@ const SpotDetail = () => {
                   </div>
                 )}
                 
-                {trail.sessions && trail.sessions.length > 0 ? (
+                {trailSessions && trailSessions.length > 0 ? (
                   <div className="space-y-4">
-                    {trail.sessions.map((session) => (
+                    {trailSessions.map((session) => (
                       <div key={session.id} className="border rounded-md p-4">
                         <div className="flex justify-between items-start">
                           <div>
                             <h3 className="font-bold">{session.title}</h3>
                             <div className="flex items-center text-gray-600 text-sm mt-1">
                               <Calendar size={14} className="mr-1" />
-                              {new Date(session.date).toLocaleDateString('fr-FR', {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric',
-                              })} à {session.time}
+                              {formatDate(session.date)} à {session.time}
                             </div>
                           </div>
                           {currentUser && (

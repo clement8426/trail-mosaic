@@ -10,6 +10,7 @@ Une application dédiée à la communauté VTT permettant de découvrir, partage
 - Filtres par difficulté, type de sentier, type de vélo, etc.
 - Zoom automatique sur les spots, sessions et événements
 - Possibilité de localiser l'utilisateur et d'afficher les spots proches
+- Filtrage des spots par événements et sessions disponibles
 
 ### Spots
 - Fiche détaillée pour chaque spot avec informations complètes
@@ -20,14 +21,16 @@ Une application dédiée à la communauté VTT permettant de découvrir, partage
 ### Sessions
 - Organisation de sessions de ride communautaires
 - Participation aux sessions d'autres utilisateurs
-- Affichage des sessions sur la carte
+- Affichage des sessions sur la carte avec bouton "Voir le spot"
 - Lien direct vers le spot de la session
+- Affichage des sessions sur la page de détail du spot
 
 ### Événements
 - Découverte d'événements VTT à proximité
 - Informations détaillées sur les événements
-- Localisation des événements sur la carte
+- Localisation des événements sur la carte avec bouton "Voir le spot"
 - Lien direct vers le spot associé
+- Affichage des événements sur la page de détail du spot
 
 ### Communauté
 - Création d'un profil utilisateur
@@ -38,9 +41,10 @@ Une application dédiée à la communauté VTT permettant de découvrir, partage
 ## Navigation
 
 - Chaque spot, session et événement est relié entre eux
-- En cliquant sur un événement ou une session, vous accédez au spot associé
+- En cliquant sur un événement ou une session, vous accédez au spot associé sur la carte
 - La carte permet de visualiser tous les éléments et de naviguer entre eux
 - Le bouton "Voir le spot" permet d'accéder directement à la fiche détaillée
+- Système de filtrage pour afficher uniquement les spots avec des événements ou des sessions
 
 ## Organisation du code
 
@@ -48,6 +52,7 @@ Une application dédiée à la communauté VTT permettant de découvrir, partage
 - Utilisation de TailwindCSS pour le style
 - Intégration de Mapbox pour la cartographie
 - Composants modulaires et réutilisables
+- Système réactif pour la mise à jour des composants en temps réel
 
 ## À venir
 

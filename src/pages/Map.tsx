@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { trails } from "@/data/trailsData";
@@ -64,6 +63,8 @@ const Map: React.FC = () => {
         trail.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         trail.location.toLowerCase().includes(searchTerm.toLowerCase());
       
+      const matchesRegion = !selectedRegion || trail.region === selectedRegion;
+      
       const matchesDifficulty = filters.difficulty === "Tous" || 
         trail.difficulty === filters.difficulty;
       
@@ -72,10 +73,16 @@ const Map: React.FC = () => {
       
       const matchesBike = filters.bikeType === "Tous" || 
         trail.recommendedBikes.includes(filters.bikeType);
-      
-      const matchesRegion = !selectedRegion || trail.region === selectedRegion;
-      
-      return matchesSearch && matchesDifficulty && matchesType && matchesBike && matchesRegion;
+
+      if (activeView === "events") {
+        const hasEvents = events.some(event => event.trailId === trail.id);
+        return matchesSearch && matchesRegion && hasEvents;
+      } else if (activeView === "sessions") {
+        const hasSessions = sessions.some(session => session.trailId === trail.id);
+        return matchesSearch && matchesRegion && hasSessions;
+      } else {
+        return matchesSearch && matchesDifficulty && matchesType && matchesBike && matchesRegion;
+      }
     });
 
     if (filters.location) {
@@ -178,7 +185,7 @@ const Map: React.FC = () => {
     }
 
     setFilteredSessions(sessionResults);
-  }, [searchTerm, filters, selectedRegion]);
+  }, [searchTerm, filters, selectedRegion, activeView]);
 
   const getEventCoordinates = (event: Event): [number, number] => {
     if (event.coordinates) {
@@ -337,7 +344,6 @@ const Map: React.FC = () => {
                           key={event.id}
                           className="border rounded-lg p-3 transition-colors hover:border-gray-300"
                           onClick={() => {
-                            // When clicking an event, select its trail
                             if (event.trailId) {
                               setSelectedTrailId(event.trailId);
                             }
@@ -387,7 +393,6 @@ const Map: React.FC = () => {
                             key={session.id}
                             className="border rounded-lg p-3 transition-colors hover:border-gray-300"
                             onClick={() => {
-                              // When clicking a session, select its trail
                               setSelectedTrailId(session.trailId);
                             }}
                           >

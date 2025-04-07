@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Star, Heart, MessageSquare, Calendar, MapPin, Users } from "lucide-react";
+import { Star, Heart, MessageSquare, Calendar, MapPin, Users, Navigation, ExternalLink } from "lucide-react";
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,10 +15,14 @@ import { trails } from "@/data/trailsData";
 import { events } from "@/data/eventsData";
 import { sessions } from "@/data/sessionsData";
 
+mapboxgl.accessToken = 'pk.eyJ1IjoiY2xlbTg0MjYiLCJhIjoiY2x1bDUxcmNwMHE4ZzJrcGg3eWVnamR0NyJ9.0b5j0eigjauA52msWlo3WQ';
+
 const SpotDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
 
   const [trail, setTrail] = useState<Trail | null>(null);
   const [trailEvents, setTrailEvents] = useState<Event[]>([]);
@@ -57,6 +63,36 @@ const SpotDetail = () => {
     
     setLoading(false);
   }, [id, currentUser]);
+
+  useEffect(() => {
+    if (!trail || !mapContainerRef.current || map.current) return;
+    
+    map.current = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: 'mapbox://styles/mapbox/outdoors-v12',
+      center: trail.coordinates,
+      zoom: 13
+    });
+    
+    map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+    
+    const marker = new mapboxgl.Marker({ color: '#16a34a' })
+      .setLngLat(trail.coordinates)
+      .setPopup(
+        new mapboxgl.Popup({ offset: 25 })
+          .setHTML(`<h3 class="font-bold">${trail.name}</h3><p>${trail.location}</p>`)
+      )
+      .addTo(map.current);
+    
+    marker.togglePopup();
+    
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
+  }, [trail]);
 
   const handleToggleFavorite = () => {
     if (!currentUser) {
@@ -192,6 +228,35 @@ const SpotDetail = () => {
     toast.success(`Votre participation a été mise à jour`);
   };
 
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'Débutant': return 'bg-green-500';
+      case 'Intermédiaire': return 'bg-blue-500';
+      case 'Avancé': return 'bg-red-500';
+      case 'Expert': return 'bg-black';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return new Intl.DateTimeFormat('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(date);
+  };
+
+  const getGoogleMapsUrl = () => {
+    const [lng, lat] = trail?.coordinates || [0, 0];
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  };
+
+  const getWazeUrl = () => {
+    const [lng, lat] = trail?.coordinates || [0, 0];
+    return `https://www.waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
@@ -217,25 +282,6 @@ const SpotDetail = () => {
       </div>
     );
   }
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'Débutant': return 'bg-green-500';
-      case 'Intermédiaire': return 'bg-blue-500';
-      case 'Avancé': return 'bg-red-500';
-      case 'Expert': return 'bg-black';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return new Intl.DateTimeFormat('fr-FR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    }).format(date);
-  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -593,9 +639,32 @@ const SpotDetail = () => {
           
           <div className="space-y-6">
             <Card>
-              <CardContent className="p-0 h-64">
-                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                  <p className="text-gray-400">Carte du spot</p>
+              <CardContent className="p-4">
+                <h3 className="font-bold mb-3">Carte du spot</h3>
+                <div ref={mapContainerRef} className="w-full h-60 rounded-md overflow-hidden" />
+                
+                <div className="mt-4 space-y-2">
+                  <h4 className="text-sm font-medium">S'y rendre:</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <a
+                      href={getGoogleMapsUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center py-2 px-3 border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors"
+                    >
+                      <ExternalLink size={14} className="mr-1" />
+                      Google Maps
+                    </a>
+                    <a
+                      href={getWazeUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center py-2 px-3 border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors"
+                    >
+                      <Navigation size={14} className="mr-1" />
+                      Waze
+                    </a>
+                  </div>
                 </div>
               </CardContent>
             </Card>

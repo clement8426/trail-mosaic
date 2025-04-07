@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -112,9 +111,10 @@ const TrailMap: React.FC<TrailMapProps> = ({
     markers.current.forEach(marker => marker.remove());
     markers.current = [];
     
-    // Determine which trails to display based on the active view
+    // Get all trails based on active view
     let trailsToShow = [...trails];
     
+    // Filter trails based on the active view tab
     if (activeView === 'events') {
       const trailIdsWithEvents = events.map(event => event.trailId);
       trailsToShow = trails.filter(trail => trailIdsWithEvents.includes(trail.id));
@@ -128,26 +128,25 @@ const TrailMap: React.FC<TrailMapProps> = ({
       trailsToShow = trailsToShow.filter(trail => trail.region === selectedRegion);
     }
     
-    // For each trail, check if it has associated events or sessions
-    if (displayTrails) {
-      trailsToShow.forEach(trail => {
-        // Find events and sessions associated with this trail
-        const trailEvents = events.filter(event => event.trailId === trail.id);
-        const trailSessions = sessions.filter(session => session.trailId === trail.id);
-        
-        // Determine marker type based on associations
-        let markerType: MarkerType = 'trail';
-        if (trailEvents.length > 0 && trailSessions.length > 0) {
-          markerType = 'trail-event-session';
-        } else if (trailEvents.length > 0) {
-          markerType = 'trail-event';
-        } else if (trailSessions.length > 0) {
-          markerType = 'trail-session';
-        }
-        
-        addTrailMarker(trail, markerType, trailEvents, trailSessions);
-      });
-    }
+    // For each trail, check if it has associated events or sessions and add markers
+    trailsToShow.forEach(trail => {
+      // Find events and sessions associated with this trail
+      const trailEvents = events.filter(event => event.trailId === trail.id);
+      const trailSessions = sessions.filter(session => session.trailId === trail.id);
+      
+      // Determine marker type based on associations
+      let markerType: MarkerType = 'trail';
+      if (trailEvents.length > 0 && trailSessions.length > 0) {
+        markerType = 'trail-event-session';
+      } else if (trailEvents.length > 0) {
+        markerType = 'trail-event';
+      } else if (trailSessions.length > 0) {
+        markerType = 'trail-session';
+      }
+      
+      // Add the marker to the map
+      addTrailMarker(trail, markerType, trailEvents, trailSessions);
+    });
       
     // If selectedTrail is set, select it
     if (selectedTrail) {
@@ -163,7 +162,8 @@ const TrailMap: React.FC<TrailMapProps> = ({
     displaySessions, 
     selectedTrail, 
     activeView, 
-    selectedRegion
+    selectedRegion,
+    zoomLevel
   ]);
 
   // Center map on user location when available

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -61,7 +62,8 @@ const TrailMap: React.FC<TrailMapProps> = ({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/outdoors-v12',
       center: [2.3522, 46.8566], // Default to center of France
-      zoom: 5
+      zoom: 5,
+      projection: 'mercator' // Utilisation d'une projection planisphère
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
@@ -111,28 +113,76 @@ const TrailMap: React.FC<TrailMapProps> = ({
     markers.current.forEach(marker => marker.remove());
     markers.current = [];
     
-    // Get all trails based on active view
-    let trailsToShow = [...trails];
+    let visibleTrails: Trail[] = [];
+    let visibleEvents: Event[] = [];
+    let visibleSessions: Session[] = [];
     
-    // Filter trails based on the active view tab
-    if (activeView === 'events') {
-      const trailIdsWithEvents = events.map(event => event.trailId);
-      trailsToShow = trails.filter(trail => trailIdsWithEvents.includes(trail.id));
-    } else if (activeView === 'sessions') {
-      const trailIdsWithSessions = sessions.map(session => session.trailId);
-      trailsToShow = trails.filter(trail => trailIdsWithSessions.includes(trail.id));
+    // Get all trails based on active view and filters
+    if (displayTrails && (activeView === 'all' || activeView === 'trails')) {
+      visibleTrails = selectedRegion 
+        ? trails.filter(trail => trail.region === selectedRegion)
+        : [...trails];
     }
     
-    // Apply region filtering if needed
-    if (selectedRegion) {
-      trailsToShow = trailsToShow.filter(trail => trail.region === selectedRegion);
+    // Handle events visibility
+    if (displayEvents && (activeView === 'all' || activeView === 'events')) {
+      // For events view, show all visible events and their associated trails
+      visibleEvents = selectedRegion 
+        ? events.filter(event => event.region === selectedRegion)
+        : [...events];
+      
+      // Add trails associated with events if not already visible
+      const eventTrailIds = new Set(visibleEvents.map(e => e.trailId).filter(Boolean));
+      
+      // If we're in events view, only show trails that have events
+      if (activeView === 'events') {
+        visibleTrails = trails.filter(trail => eventTrailIds.has(trail.id));
+        if (selectedRegion) {
+          visibleTrails = visibleTrails.filter(trail => trail.region === selectedRegion);
+        }
+      } else if (activeView === 'all') {
+        // In all view, make sure to include trails with events
+        const additionalTrails = trails.filter(
+          trail => eventTrailIds.has(trail.id) && !visibleTrails.some(t => t.id === trail.id)
+        );
+        visibleTrails = [...visibleTrails, ...additionalTrails];
+      }
     }
+    
+    // Handle sessions visibility
+    if (displaySessions && (activeView === 'all' || activeView === 'sessions')) {
+      // For sessions view, show all visible sessions and their associated trails
+      visibleSessions = [...sessions];
+      if (selectedRegion) {
+        const regionTrailIds = new Set(trails.filter(t => t.region === selectedRegion).map(t => t.id));
+        visibleSessions = visibleSessions.filter(session => regionTrailIds.has(session.trailId));
+      }
+      
+      // Add trails associated with sessions if not already visible
+      const sessionTrailIds = new Set(visibleSessions.map(s => s.trailId));
+      
+      // If we're in sessions view, only show trails that have sessions
+      if (activeView === 'sessions') {
+        visibleTrails = trails.filter(trail => sessionTrailIds.has(trail.id));
+        if (selectedRegion) {
+          visibleTrails = visibleTrails.filter(trail => trail.region === selectedRegion);
+        }
+      } else if (activeView === 'all') {
+        // In all view, make sure to include trails with sessions
+        const additionalTrails = trails.filter(
+          trail => sessionTrailIds.has(trail.id) && !visibleTrails.some(t => t.id === trail.id)
+        );
+        visibleTrails = [...visibleTrails, ...additionalTrails];
+      }
+    }
+    
+    console.log(`Displaying: ${visibleTrails.length} trails, ${visibleEvents.length} events, ${visibleSessions.length} sessions`);
     
     // For each trail, check if it has associated events or sessions and add markers
-    trailsToShow.forEach(trail => {
+    visibleTrails.forEach(trail => {
       // Find events and sessions associated with this trail
-      const trailEvents = events.filter(event => event.trailId === trail.id);
-      const trailSessions = sessions.filter(session => session.trailId === trail.id);
+      const trailEvents = visibleEvents.filter(event => event.trailId === trail.id);
+      const trailSessions = visibleSessions.filter(session => session.trailId === trail.id);
       
       // Determine marker type based on associations
       let markerType: MarkerType = 'trail';

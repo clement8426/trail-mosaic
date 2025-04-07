@@ -33,7 +33,8 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/outdoors-v12',
       center: [2.3522, 46.8566], // Default to center of France
-      zoom: 5
+      zoom: 5,
+      projection: 'mercator' // Utilisation d'une projection planisphère
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');

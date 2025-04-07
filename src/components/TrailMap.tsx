@@ -106,33 +106,47 @@ const TrailMap: React.FC<TrailMapProps> = ({
   useEffect(() => {
     if (!mapLoaded || !map.current) return;
     
-    console.log("Updating markers, zoom level:", zoomLevel);
+    console.log("Updating markers, zoom level:", zoomLevel, "activeView:", activeView);
     
     // Clear existing markers
     markers.current.forEach(marker => marker.remove());
     markers.current = [];
     
+    // Determine which trails to display based on the active view
+    let trailsToShow = [...trails];
+    
+    if (activeView === 'events') {
+      const trailIdsWithEvents = events.map(event => event.trailId);
+      trailsToShow = trails.filter(trail => trailIdsWithEvents.includes(trail.id));
+    } else if (activeView === 'sessions') {
+      const trailIdsWithSessions = sessions.map(session => session.trailId);
+      trailsToShow = trails.filter(trail => trailIdsWithSessions.includes(trail.id));
+    }
+    
+    // Apply region filtering if needed
+    if (selectedRegion) {
+      trailsToShow = trailsToShow.filter(trail => trail.region === selectedRegion);
+    }
+    
     // For each trail, check if it has associated events or sessions
     if (displayTrails) {
-      trails
-        .filter(trail => !selectedRegion || trail.region === selectedRegion)
-        .forEach(trail => {
-          // Find events and sessions associated with this trail
-          const trailEvents = events.filter(event => event.trailId === trail.id);
-          const trailSessions = sessions.filter(session => session.trailId === trail.id);
-          
-          // Determine marker type based on associations
-          let markerType: MarkerType = 'trail';
-          if (trailEvents.length > 0 && trailSessions.length > 0) {
-            markerType = 'trail-event-session';
-          } else if (trailEvents.length > 0) {
-            markerType = 'trail-event';
-          } else if (trailSessions.length > 0) {
-            markerType = 'trail-session';
-          }
-          
-          addTrailMarker(trail, markerType, trailEvents, trailSessions);
-        });
+      trailsToShow.forEach(trail => {
+        // Find events and sessions associated with this trail
+        const trailEvents = events.filter(event => event.trailId === trail.id);
+        const trailSessions = sessions.filter(session => session.trailId === trail.id);
+        
+        // Determine marker type based on associations
+        let markerType: MarkerType = 'trail';
+        if (trailEvents.length > 0 && trailSessions.length > 0) {
+          markerType = 'trail-event-session';
+        } else if (trailEvents.length > 0) {
+          markerType = 'trail-event';
+        } else if (trailSessions.length > 0) {
+          markerType = 'trail-session';
+        }
+        
+        addTrailMarker(trail, markerType, trailEvents, trailSessions);
+      });
     }
       
     // If selectedTrail is set, select it

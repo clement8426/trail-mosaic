@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -63,7 +62,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
       style: 'mapbox://styles/mapbox/outdoors-v12',
       center: [2.3522, 46.8566], // Default to center of France
       zoom: 5,
-      projection: 'mercator' // Utilisation d'une projection planisphère
+      projection: { name: 'mercator' } // Using a Mercator projection (flat world map)
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');

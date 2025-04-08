@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -26,6 +25,7 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [mapZoom, setMapZoom] = useState<number>(5);
   const [mapCenter, setMapCenter] = useState<[number, number]>([2.3522, 46.8566]);
+  const [isLowZoom, setIsLowZoom] = useState<boolean>(false);
 
   // Initialize map when component mounts
   useEffect(() => {
@@ -39,7 +39,9 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
       center: [2.3522, 46.8566], // Default to center of France
       zoom: 5,
       projection: {name: 'mercator'} as mapboxgl.Projection, // Fixed: Using proper Projection type
-      renderWorldCopies: false // Prevent multiple world copies which can cause marker issues
+      renderWorldCopies: false, // Prevent multiple world copies which can cause marker issues
+      maxZoom: 18,
+      minZoom: 1 // Set minimum zoom to 1 to prevent issues at zoom level 0
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
@@ -77,6 +79,9 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
         console.log('Map zoom changed:', newZoom, 'center:', [newCenter.lng, newCenter.lat]);
         setMapZoom(newZoom);
         setMapCenter([newCenter.lng, newCenter.lat]);
+        
+        // Check if we're at a low zoom level
+        setIsLowZoom(newZoom < 2);
         
         // Log each marker's position after zoom
         if (markers.current.length > 0) {
@@ -141,11 +146,26 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
     markers.current.forEach(marker => marker.remove());
     markers.current = [];
     
+    // Calculate bounds of our events
+    const bounds = new mapboxgl.LngLatBounds();
+    events.forEach(event => {
+      const coords = getEventCoordinates(event);
+      bounds.extend(coords);
+    });
+    
     // Add markers for each event
     events.forEach((event, index) => {
       // Get mock coordinates for the event
       const coords = getEventCoordinates(event);
       console.log(`Event ${index} (${event.title}): Creating marker at coordinates:`, coords);
+      
+      // If we're at a very low zoom, we might want to adjust marker behavior
+      if (isLowZoom && map.current) {
+        // For low zoom levels, ensure we're using a normalized position
+        // that stays within the visible bounds of the map
+        const normalizedPos = normalizeCoordinates(coords, mapCenter, mapZoom);
+        console.log(`Normalized position for marker ${index}:`, normalizedPos);
+      }
       
       // Create marker element
       const el = document.createElement('div');
@@ -170,8 +190,8 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
         element: el,
         anchor: 'center', // Ensures the marker is centered on its coordinates
         offset: [0, 0], // Explicit offset to ensure consistency
-        pitchAlignment: 'viewport', // Try viewport alignment instead of map
-        rotationAlignment: 'viewport' // Try viewport alignment instead of map
+        pitchAlignment: 'viewport', // Use viewport alignment instead of map
+        rotationAlignment: 'viewport' // Use viewport alignment instead of map
       })
         .setLngLat(coords)
         .setPopup(
@@ -197,8 +217,41 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
       markers.current.push(marker);
     });
     
+    // If we have events, fit the map to show all event markers
+    if (events.length > 0 && !userLocation && map.current) {
+      try {
+        map.current.fitBounds(bounds, {
+          padding: 100,
+          maxZoom: 12
+        });
+      } catch (error) {
+        console.error("Error fitting bounds:", error);
+      }
+    }
+    
     console.log('Total markers added:', markers.current.length);
-  }, [events, loaded, mapZoom]);
+  }, [events, loaded, mapZoom, isLowZoom, mapCenter]);
+
+  // Helper to normalize coordinates for low zoom levels
+  const normalizeCoordinates = (coords: [number, number], center: [number, number], zoom: number): [number, number] => {
+    if (zoom >= 2) return coords;
+    
+    // At very low zoom, we need to adjust the longitude to prevent wrapping
+    // This is a simplified approach - for a full solution, consider using a proper map projection library
+    const [lng, lat] = coords;
+    
+    // Keep longitude within reasonable bounds around the center
+    let normalizedLng = lng;
+    const centerLng = center[0];
+    
+    // If the longitude is too far from the center, adjust it
+    const lngDiff = Math.abs(normalizedLng - centerLng);
+    if (lngDiff > 180) {
+      normalizedLng = normalizedLng > centerLng ? normalizedLng - 360 : normalizedLng + 360;
+    }
+    
+    return [normalizedLng, lat];
+  };
 
   // Helper to get event coordinates (mock data for now)
   const getEventCoordinates = (event: Event): [number, number] => {
@@ -236,6 +289,7 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
         <div><strong>Center:</strong> [{mapCenter[0].toFixed(4)}, {mapCenter[1].toFixed(4)}]</div>
         <div><strong>Markers:</strong> {markers.current.length}</div>
         <div><strong>Map loaded:</strong> {loaded ? 'Yes' : 'No'}</div>
+        <div><strong>Low zoom mode:</strong> {isLowZoom ? 'Yes' : 'No'}</div>
       </div>
     );
   };

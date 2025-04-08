@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -52,6 +51,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
   } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(5);
   const [mapCenter, setMapCenter] = useState<[number, number]>([2.3522, 46.8566]);
+  const [isLowZoom, setIsLowZoom] = useState(false);
 
   const { toast } = useToast();
   
@@ -68,7 +68,9 @@ const TrailMap: React.FC<TrailMapProps> = ({
       zoom: 5,
       projection: {name: 'mercator'} as mapboxgl.Projection,
       renderWorldCopies: false, // Prevent multiple world copies which can cause marker issues
-      antialias: true // Try adding antialiasing
+      antialias: true, // Try adding antialiasing
+      maxZoom: 18,
+      minZoom: 1 // Set minimum zoom to 1 to prevent issues at zoom level 0
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
@@ -88,6 +90,12 @@ const TrailMap: React.FC<TrailMapProps> = ({
     map.current.on('load', () => {
       console.log('TrailMap loaded successfully');
       setMapLoaded(true);
+      
+      // Add bounds checking to prevent excessive panning
+      map.current!.setMaxBounds([
+        [-180, -85], // Southwest coordinates
+        [180, 85]    // Northeast coordinates
+      ]);
     });
 
     // Listen for zoom start events
@@ -105,6 +113,9 @@ const TrailMap: React.FC<TrailMapProps> = ({
         if (newZoomLevel !== zoomLevel) {
           console.log('Zoom level changed from', zoomLevel, 'to', newZoomLevel);
           setZoomLevel(newZoomLevel);
+          
+          // Check if we're in a low zoom level
+          setIsLowZoom(newZoomLevel < 2);
         }
         
         setMapCenter([newCenter.lng, newCenter.lat]);
@@ -141,7 +152,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
   useEffect(() => {
     if (!mapLoaded || !map.current) return;
     
-    console.log("Updating markers, zoom level:", zoomLevel, "activeView:", activeView, "map center:", mapCenter);
+    console.log("Updating markers, zoom level:", zoomLevel, "activeView:", activeView, "map center:", mapCenter, "isLowZoom:", isLowZoom);
     
     // Clear existing markers
     markers.current.forEach(markerObj => markerObj.marker.remove());
@@ -212,6 +223,9 @@ const TrailMap: React.FC<TrailMapProps> = ({
     
     console.log(`Displaying: ${visibleTrails.length} trails, ${visibleEvents.length} events, ${visibleSessions.length} sessions`);
     
+    // Calculate bounds for all visible markers
+    const bounds = new mapboxgl.LngLatBounds();
+    
     // For each trail, check if it has associated events or sessions and add markers
     visibleTrails.forEach(trail => {
       // Find events and sessions associated with this trail
@@ -230,7 +244,22 @@ const TrailMap: React.FC<TrailMapProps> = ({
       
       // Add the marker to the map
       addTrailMarker(trail, markerType, trailEvents, trailSessions);
+      
+      // Extend the bounds
+      bounds.extend(trail.coordinates);
     });
+    
+    // If we have visible trails, fit bounds unless a specific trail is selected
+    if (visibleTrails.length > 0 && !selectedTrail && !userLocation && map.current) {
+      try {
+        map.current.fitBounds(bounds, {
+          padding: 100,
+          maxZoom: 12
+        });
+      } catch (error) {
+        console.error("Error fitting bounds:", error);
+      }
+    }
       
     // If selectedTrail is set, select it
     if (selectedTrail) {
@@ -248,7 +277,8 @@ const TrailMap: React.FC<TrailMapProps> = ({
     selectedTrail, 
     activeView, 
     selectedRegion,
-    zoomLevel
+    zoomLevel,
+    isLowZoom
   ]);
 
   // Center map on user location when available
@@ -291,6 +321,27 @@ const TrailMap: React.FC<TrailMapProps> = ({
     });
   }, [userLocation, mapLoaded, toast]);
 
+  // Helper to normalize coordinates for low zoom levels
+  const normalizeCoordinates = (coords: [number, number], center: [number, number], zoom: number): [number, number] => {
+    if (zoom >= 2) return coords;
+    
+    // At very low zoom, we need to adjust the longitude to prevent wrapping
+    // This is a simplified approach - for a full solution, consider using a proper map projection library
+    const [lng, lat] = coords;
+    
+    // Keep longitude within reasonable bounds around the center
+    let normalizedLng = lng;
+    const centerLng = center[0];
+    
+    // If the longitude is too far from the center, adjust it
+    const lngDiff = Math.abs(normalizedLng - centerLng);
+    if (lngDiff > 180) {
+      normalizedLng = normalizedLng > centerLng ? normalizedLng - 360 : normalizedLng + 360;
+    }
+    
+    return [normalizedLng, lat];
+  };
+
   const addTrailMarker = (
     trail: Trail, 
     type: MarkerType,
@@ -301,6 +352,14 @@ const TrailMap: React.FC<TrailMapProps> = ({
 
     const coords = trail.coordinates;
     console.log(`Creating marker for ${trail.name} (${type}) at coordinates:`, coords);
+    
+    // If we're at a very low zoom, we might want to adjust marker behavior
+    let markerCoords = coords;
+    if (isLowZoom) {
+      // For low zoom levels, ensure we're using a normalized position
+      markerCoords = normalizeCoordinates(coords, mapCenter, zoomLevel);
+      console.log(`Normalized position for marker ${trail.name}:`, markerCoords);
+    }
     
     let color: string;
     let borderColor: string = 'white';
@@ -404,7 +463,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
       pitchAlignment: 'viewport', // Try viewport alignment instead of map
       rotationAlignment: 'viewport' // Try viewport alignment instead of map
     })
-      .setLngLat(coords)
+      .setLngLat(markerCoords)
       .addTo(map.current);
       
     console.log(`Marker for ${trail.name} added to map, position:`, marker.getLngLat());
@@ -543,6 +602,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
         <div><strong>Map loaded:</strong> {mapLoaded ? 'Yes' : 'No'}</div>
         <div><strong>Active view:</strong> {activeView}</div>
         <div><strong>Selected region:</strong> {selectedRegion || 'None'}</div>
+        <div><strong>Low zoom mode:</strong> {isLowZoom ? 'Yes' : 'No'}</div>
         <details className="mt-1">
           <summary className="cursor-pointer text-blue-600">Marker details</summary>
           <div className="pl-2 pt-1">

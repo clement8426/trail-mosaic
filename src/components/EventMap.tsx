@@ -24,17 +24,22 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
   const markers = useRef<mapboxgl.Marker[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [mapZoom, setMapZoom] = useState<number>(5);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([2.3522, 46.8566]);
 
   // Initialize map when component mounts
   useEffect(() => {
     if (!mapContainer.current) return;
+    
+    console.log('Initializing map with center:', [2.3522, 46.8566], 'zoom:', 5);
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/outdoors-v12',
       center: [2.3522, 46.8566], // Default to center of France
       zoom: 5,
-      projection: {name: 'mercator'} as mapboxgl.Projection // Fixed: Using proper Projection type
+      projection: {name: 'mercator'} as mapboxgl.Projection, // Fixed: Using proper Projection type
+      renderWorldCopies: false // Prevent multiple world copies which can cause marker issues
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
@@ -54,12 +59,42 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
     geocoder.on('result', (e) => {
       if (onLocationSelected && e.result.center) {
         const coords: [number, number] = [e.result.center[0], e.result.center[1]];
+        console.log('Location selected from geocoder:', coords);
         onLocationSelected(coords);
       }
     });
 
     map.current.on('load', () => {
+      console.log('Map loaded');
       setLoaded(true);
+    });
+    
+    // Add zoom change listener
+    map.current.on('zoom', () => {
+      if (map.current) {
+        const newZoom = map.current.getZoom();
+        const newCenter = map.current.getCenter();
+        console.log('Map zoom changed:', newZoom, 'center:', [newCenter.lng, newCenter.lat]);
+        setMapZoom(newZoom);
+        setMapCenter([newCenter.lng, newCenter.lat]);
+        
+        // Log each marker's position after zoom
+        if (markers.current.length > 0) {
+          console.log('-------- Marker positions after zoom --------');
+          markers.current.forEach((marker, index) => {
+            const position = marker.getLngLat();
+            console.log(`Marker ${index}: LngLat(${position.lng.toFixed(6)}, ${position.lat.toFixed(6)})`);
+          });
+        }
+      }
+    });
+    
+    // Add move end listener
+    map.current.on('moveend', () => {
+      if (map.current) {
+        const newCenter = map.current.getCenter();
+        console.log('Map move ended, center:', [newCenter.lng, newCenter.lat]);
+      }
     });
 
     // Clean up on unmount
@@ -73,6 +108,8 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
   // Add user location when available
   useEffect(() => {
     if (!map.current || !loaded || !userLocation) return;
+    
+    console.log('Adding user location marker at:', userLocation);
     
     // Add a marker for the user's location
     new mapboxgl.Marker({ 
@@ -90,20 +127,25 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
       zoom: 10,
       essential: true
     });
+    
+    console.log('Map centered on user location, new zoom:', 10);
   }, [userLocation, loaded]);
 
   // Add event markers
   useEffect(() => {
     if (!map.current || !loaded) return;
     
+    console.log('Adding event markers, count:', events.length, 'current zoom:', mapZoom);
+    
     // Clear existing markers
     markers.current.forEach(marker => marker.remove());
     markers.current = [];
     
     // Add markers for each event
-    events.forEach(event => {
+    events.forEach((event, index) => {
       // Get mock coordinates for the event
       const coords = getEventCoordinates(event);
+      console.log(`Event ${index} (${event.title}): Creating marker at coordinates:`, coords);
       
       // Create marker element
       const el = document.createElement('div');
@@ -116,13 +158,20 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
       el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
       el.style.cursor = 'pointer';
       
+      // Log marker DOM element details
+      console.log(`Event ${index} marker element:`, {
+        width: el.style.width,
+        height: el.style.height,
+        backgroundColor: el.style.backgroundColor
+      });
+      
       // Create marker with full explicit settings to prevent drifting
       const marker = new mapboxgl.Marker({ 
         element: el,
         anchor: 'center', // Ensures the marker is centered on its coordinates
         offset: [0, 0], // Explicit offset to ensure consistency
-        pitchAlignment: 'map', // Keep markers aligned with the map projection
-        rotationAlignment: 'map' // Keep markers aligned with the map rotation
+        pitchAlignment: 'viewport', // Try viewport alignment instead of map
+        rotationAlignment: 'viewport' // Try viewport alignment instead of map
       })
         .setLngLat(coords)
         .setPopup(
@@ -136,15 +185,20 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
           `)
         )
         .addTo(map.current);
+        
+      console.log(`Event ${index} marker added to map, position:`, marker.getLngLat());
       
       // Add click event to marker
       el.addEventListener('click', () => {
         setSelectedEvent(event);
+        console.log('Marker clicked, selected event:', event.title);
       });
       
       markers.current.push(marker);
     });
-  }, [events, loaded]);
+    
+    console.log('Total markers added:', markers.current.length);
+  }, [events, loaded, mapZoom]);
 
   // Helper to get event coordinates (mock data for now)
   const getEventCoordinates = (event: Event): [number, number] => {
@@ -174,9 +228,24 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
     }).format(date);
   };
 
+  // Add debug information overlay
+  const renderDebugInfo = () => {
+    return (
+      <div className="absolute bottom-14 left-4 bg-white p-2 rounded shadow text-xs z-10 max-w-xs max-h-48 overflow-auto">
+        <div><strong>Zoom:</strong> {mapZoom.toFixed(2)}</div>
+        <div><strong>Center:</strong> [{mapCenter[0].toFixed(4)}, {mapCenter[1].toFixed(4)}]</div>
+        <div><strong>Markers:</strong> {markers.current.length}</div>
+        <div><strong>Map loaded:</strong> {loaded ? 'Yes' : 'No'}</div>
+      </div>
+    );
+  };
+
   return (
     <div className="relative w-full h-full">
       <div className="w-full h-full" ref={mapContainer} />
+      
+      {/* Debug info panel */}
+      {renderDebugInfo()}
       
       {/* Event info panel */}
       {selectedEvent && (

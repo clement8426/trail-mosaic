@@ -9,7 +9,7 @@ import { events } from '../data/eventsData';
 import { sessions } from '../data/sessionsData';
 import { Trail, Event, Session } from '@/types';
 import { Button } from '@/components/ui/button';
-import { X, MapPin, Calendar, Users } from 'lucide-react';
+import { X, MapPin, Calendar, Users, Navigation, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
@@ -43,7 +43,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<mapboxgl.Marker[]>([]);
+  const markers = useRef<{marker: mapboxgl.Marker, id: string, type: MarkerType}[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedItem, setSelectedItem] = useState<{
     type: 'trail' | 'event' | 'session';
@@ -51,6 +51,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
     data: Trail | Event | Session;
   } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(5);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([2.3522, 46.8566]);
 
   const { toast } = useToast();
   
@@ -58,13 +59,16 @@ const TrailMap: React.FC<TrailMapProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
+    console.log('Initializing TrailMap with initial center:', [2.3522, 46.8566], 'zoom:', 5);
+
     map.current = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/outdoors-v12',
       center: [2.3522, 46.8566], // Default to center of France
       zoom: 5,
       projection: {name: 'mercator'} as mapboxgl.Projection,
-      renderWorldCopies: false // Prevent multiple world copies which can cause marker issues
+      renderWorldCopies: false, // Prevent multiple world copies which can cause marker issues
+      antialias: true // Try adding antialiasing
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
@@ -82,23 +86,52 @@ const TrailMap: React.FC<TrailMapProps> = ({
     
     // Listen for map load event
     map.current.on('load', () => {
+      console.log('TrailMap loaded successfully');
       setMapLoaded(true);
+    });
+
+    // Listen for zoom start events
+    map.current.on('zoomstart', () => {
+      console.log('Zoom start event triggered');
     });
 
     // Listen for zoom events
     map.current.on('zoom', () => {
       if (map.current) {
         const newZoomLevel = Math.floor(map.current.getZoom());
+        const newCenter = map.current.getCenter();
+        console.log('Zoom event triggered, new zoom level:', newZoomLevel, 'center:', [newCenter.lng, newCenter.lat]);
+        
         if (newZoomLevel !== zoomLevel) {
+          console.log('Zoom level changed from', zoomLevel, 'to', newZoomLevel);
           setZoomLevel(newZoomLevel);
         }
+        
+        setMapCenter([newCenter.lng, newCenter.lat]);
+        
+        // Log marker positions during zoom
+        if (markers.current.length > 0) {
+          console.log('-------- Marker positions during zoom --------');
+          markers.current.forEach((markerObj, index) => {
+            const position = markerObj.marker.getLngLat();
+            console.log(`Marker ${index} (${markerObj.id}, ${markerObj.type}): LngLat(${position.lng.toFixed(6)}, ${position.lat.toFixed(6)})`);
+          });
+        }
+      }
+    });
+    
+    // Listen for move end events
+    map.current.on('moveend', () => {
+      if (map.current) {
+        const newCenter = map.current.getCenter();
+        console.log('Move end event triggered, new center:', [newCenter.lng, newCenter.lat]);
       }
     });
 
     // Clean up on unmount
     return () => {
       if (map.current) {
-        markers.current.forEach(marker => marker.remove());
+        markers.current.forEach(markerObj => markerObj.marker.remove());
         map.current.remove();
       }
     };
@@ -108,10 +141,10 @@ const TrailMap: React.FC<TrailMapProps> = ({
   useEffect(() => {
     if (!mapLoaded || !map.current) return;
     
-    console.log("Updating markers, zoom level:", zoomLevel, "activeView:", activeView);
+    console.log("Updating markers, zoom level:", zoomLevel, "activeView:", activeView, "map center:", mapCenter);
     
     // Clear existing markers
-    markers.current.forEach(marker => marker.remove());
+    markers.current.forEach(markerObj => markerObj.marker.remove());
     markers.current = [];
     
     let visibleTrails: Trail[] = [];
@@ -203,6 +236,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
     if (selectedTrail) {
       const trail = trails.find(t => t.id === selectedTrail);
       if (trail) {
+        console.log('Selecting pre-selected trail:', trail.name);
         handleItemSelect('trail', trail);
       }
     }
@@ -221,19 +255,25 @@ const TrailMap: React.FC<TrailMapProps> = ({
   useEffect(() => {
     if (!map.current || !mapLoaded || !userLocation) return;
     
+    console.log('Adding user location marker at:', userLocation);
+    
     // Add a marker for the user's location
     const userMarker = new mapboxgl.Marker({ 
       color: '#3b82f6',
       anchor: 'center', // Ensure marker is properly centered
       offset: [0, 0], // Explicit offset to ensure consistency
-      pitchAlignment: 'map', // Keep marker aligned with map projection
-      rotationAlignment: 'map' // Keep marker aligned with map rotation
+      pitchAlignment: 'viewport', // Try viewport alignment instead of map
+      rotationAlignment: 'viewport' // Try viewport alignment instead of map
     })
       .setLngLat(userLocation)
       .addTo(map.current)
       .setPopup(new mapboxgl.Popup().setHTML('<div class="font-semibold">Votre position</div>'));
     
-    markers.current.push(userMarker);
+    markers.current.push({
+      marker: userMarker,
+      id: 'user-location',
+      type: 'trail' // Using trail as default type for user marker
+    });
     
     // Center map on user location
     map.current.flyTo({
@@ -241,6 +281,8 @@ const TrailMap: React.FC<TrailMapProps> = ({
       zoom: 10,
       essential: true
     });
+    
+    console.log('Map centered on user location, new zoom:', 10);
 
     // Show toast notification
     toast({
@@ -258,6 +300,8 @@ const TrailMap: React.FC<TrailMapProps> = ({
     if (!map.current) return;
 
     const coords = trail.coordinates;
+    console.log(`Creating marker for ${trail.name} (${type}) at coordinates:`, coords);
+    
     let color: string;
     let borderColor: string = 'white';
     let size: number = 24;
@@ -294,6 +338,15 @@ const TrailMap: React.FC<TrailMapProps> = ({
     el.style.border = `3px solid ${borderColor}`;
     el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
     el.style.cursor = 'pointer';
+    
+    // Log marker DOM element details
+    console.log(`Marker for ${trail.name} element:`, {
+      type,
+      width: el.style.width,
+      height: el.style.height,
+      backgroundColor: el.style.backgroundColor,
+      borderColor: el.style.border
+    });
     
     // Add icons or counters for spots with events/sessions
     if (type === 'trail-event-session' || type === 'trail-event' || type === 'trail-session') {
@@ -348,11 +401,13 @@ const TrailMap: React.FC<TrailMapProps> = ({
       element: el,
       anchor: 'center', // Ensures the marker is centered on its coordinates
       offset: [0, 0], // Explicit offset to ensure consistency
-      pitchAlignment: 'map', // Keep markers aligned with the map projection
-      rotationAlignment: 'map' // Keep markers aligned with the map rotation
+      pitchAlignment: 'viewport', // Try viewport alignment instead of map
+      rotationAlignment: 'viewport' // Try viewport alignment instead of map
     })
       .setLngLat(coords)
       .addTo(map.current);
+      
+    console.log(`Marker for ${trail.name} added to map, position:`, marker.getLngLat());
     
     // Add popup with trail info and event/session counts
     let popupContent = `
@@ -384,13 +439,19 @@ const TrailMap: React.FC<TrailMapProps> = ({
     // Add click event to marker
     el.addEventListener('click', () => {
       handleItemSelect('trail', trail);
+      console.log('Marker clicked, selected trail:', trail.name);
     });
     
-    markers.current.push(marker);
+    markers.current.push({
+      marker,
+      id: trail.id,
+      type
+    });
   };
 
   const handleItemSelect = (type: 'trail' | 'event' | 'session', item: Trail | Event | Session) => {
     setSelectedItem({ type, id: item.id, data: item });
+    console.log(`Selected ${type} with id ${item.id}`);
     
     // If it's a trail and we have an onTrailSelect callback, call it
     if (type === 'trail' && onTrailSelect) {
@@ -428,6 +489,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
         onTrailSelect(trailId);
       }
       
+      console.log(`Flying to ${type} location:`, coords);
       map.current.flyTo({
         center: coords,
         zoom: 12,
@@ -441,6 +503,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
     if (onTrailSelect) {
       onTrailSelect(null);
     }
+    console.log('Info panel closed');
   };
 
   // Helper to get event coordinates
@@ -470,12 +533,43 @@ const TrailMap: React.FC<TrailMapProps> = ({
     }).format(date);
   };
 
+  // Render a debug panel with detailed information about the map and markers
+  const renderDebugInfo = () => {
+    return (
+      <div className="absolute bottom-12 left-4 bg-white p-2 rounded shadow text-xs z-10 max-w-xs max-h-48 overflow-auto">
+        <div><strong>Zoom:</strong> {zoomLevel.toFixed(2)}</div>
+        <div><strong>Center:</strong> [{mapCenter[0].toFixed(4)}, {mapCenter[1].toFixed(4)}]</div>
+        <div><strong>Markers:</strong> {markers.current.length}</div>
+        <div><strong>Map loaded:</strong> {mapLoaded ? 'Yes' : 'No'}</div>
+        <div><strong>Active view:</strong> {activeView}</div>
+        <div><strong>Selected region:</strong> {selectedRegion || 'None'}</div>
+        <details className="mt-1">
+          <summary className="cursor-pointer text-blue-600">Marker details</summary>
+          <div className="pl-2 pt-1">
+            {markers.current.map((m, i) => (
+              <div key={i} className="mb-1 border-t pt-1">
+                <div>#{i}: {m.id.substring(0, 8)}</div>
+                <div>Type: {m.type}</div>
+                <div>
+                  Pos: [{m.marker.getLngLat().lng.toFixed(4)}, {m.marker.getLngLat().lat.toFixed(4)}]
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
+      </div>
+    );
+  };
+
   return (
     <div className="relative w-full h-full bg-gray-100 rounded-lg overflow-hidden">
       <div
         ref={mapContainerRef}
         className="w-full h-full"
       />
+      
+      {/* Debug info panel */}
+      {renderDebugInfo()}
       
       {/* Selected item info panel */}
       {selectedItem && (

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -33,7 +34,7 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
       style: 'mapbox://styles/mapbox/outdoors-v12',
       center: [2.3522, 46.8566], // Default to center of France
       zoom: 5,
-      projection: { name: 'mercator' } // Using a Mercator projection (flat world map)
+      projection: 'mercator' // Using Mercator projection (flat world map)
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
@@ -112,7 +113,10 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
       el.style.cursor = 'pointer';
       
       // Create marker
-      const marker = new mapboxgl.Marker({ color: '#f59e0b', element: el })
+      const marker = new mapboxgl.Marker({ 
+        element: el,
+        anchor: 'center' // Ensures the marker is centered on its coordinates
+      })
         .setLngLat(coords)
         .setPopup(
           new mapboxgl.Popup({ offset: 25 }).setHTML(`

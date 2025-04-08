@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -62,7 +63,7 @@ const TrailMap: React.FC<TrailMapProps> = ({
       style: 'mapbox://styles/mapbox/outdoors-v12',
       center: [2.3522, 46.8566], // Default to center of France
       zoom: 5,
-      projection: { name: 'mercator' } // Using a Mercator projection (flat world map)
+      projection: 'mercator' // Using Mercator projection (flat world map)
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
@@ -220,7 +221,10 @@ const TrailMap: React.FC<TrailMapProps> = ({
     if (!map.current || !mapLoaded || !userLocation) return;
     
     // Add a marker for the user's location
-    const userMarker = new mapboxgl.Marker({ color: '#3b82f6' })
+    const userMarker = new mapboxgl.Marker({ 
+      color: '#3b82f6',
+      anchor: 'center'
+    })
       .setLngLat(userLocation)
       .addTo(map.current)
       .setPopup(new mapboxgl.Popup().setHTML('<div class="font-semibold">Votre position</div>'));
@@ -336,7 +340,10 @@ const TrailMap: React.FC<TrailMapProps> = ({
     }
     
     // Create marker
-    const marker = new mapboxgl.Marker({ element: el })
+    const marker = new mapboxgl.Marker({ 
+      element: el,
+      anchor: 'center' // Ensures the marker is centered on its coordinates
+    })
       .setLngLat(coords)
       .addTo(map.current);
     

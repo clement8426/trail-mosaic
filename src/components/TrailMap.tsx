@@ -63,7 +63,8 @@ const TrailMap: React.FC<TrailMapProps> = ({
       style: 'mapbox://styles/mapbox/outdoors-v12',
       center: [2.3522, 46.8566], // Default to center of France
       zoom: 5,
-      projection: {name: 'mercator'} as mapboxgl.Projection // Fixed: Using proper Projection type
+      projection: {name: 'mercator'} as mapboxgl.Projection,
+      renderWorldCopies: false // Prevent multiple world copies which can cause marker issues
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
@@ -224,7 +225,9 @@ const TrailMap: React.FC<TrailMapProps> = ({
     const userMarker = new mapboxgl.Marker({ 
       color: '#3b82f6',
       anchor: 'center', // Ensure marker is properly centered
-      offset: [0, 0] // Explicit offset to ensure consistency
+      offset: [0, 0], // Explicit offset to ensure consistency
+      pitchAlignment: 'map', // Keep marker aligned with map projection
+      rotationAlignment: 'map' // Keep marker aligned with map rotation
     })
       .setLngLat(userLocation)
       .addTo(map.current)
@@ -340,11 +343,13 @@ const TrailMap: React.FC<TrailMapProps> = ({
       el.style.position = 'relative';
     }
     
-    // Create marker with fixed settings to prevent drifting
+    // Create marker with enhanced settings to prevent drifting at any zoom level
     const marker = new mapboxgl.Marker({ 
       element: el,
       anchor: 'center', // Ensures the marker is centered on its coordinates
-      offset: [0, 0] // Explicit offset to ensure consistency
+      offset: [0, 0], // Explicit offset to ensure consistency
+      pitchAlignment: 'map', // Keep markers aligned with the map projection
+      rotationAlignment: 'map' // Keep markers aligned with the map rotation
     })
       .setLngLat(coords)
       .addTo(map.current);

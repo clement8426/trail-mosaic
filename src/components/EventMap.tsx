@@ -77,7 +77,8 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
     // Add a marker for the user's location
     new mapboxgl.Marker({ 
       color: '#3b82f6',
-      anchor: 'center' // Ensure marker is properly centered
+      anchor: 'center', // Ensure marker is properly centered
+      offset: [0, 0] // Explicit offset to ensure consistency
     })
       .setLngLat(userLocation)
       .addTo(map.current)
@@ -115,11 +116,13 @@ const EventMap: React.FC<EventMapProps> = ({ events, userLocation, onLocationSel
       el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
       el.style.cursor = 'pointer';
       
-      // Create marker
+      // Create marker with full explicit settings to prevent drifting
       const marker = new mapboxgl.Marker({ 
         element: el,
         anchor: 'center', // Ensures the marker is centered on its coordinates
-        offset: [0, 0] // Explicit offset to ensure consistency
+        offset: [0, 0], // Explicit offset to ensure consistency
+        pitchAlignment: 'map', // Keep markers aligned with the map projection
+        rotationAlignment: 'map' // Keep markers aligned with the map rotation
       })
         .setLngLat(coords)
         .setPopup(

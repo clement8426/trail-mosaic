@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { CheckIcon, X } from 'lucide-react';
@@ -60,7 +59,7 @@ const CreateSpot: React.FC = () => {
       style: 'mapbox://styles/mapbox/outdoors-v12',
       center: formData.mapPosition,
       zoom: 12,
-      projection: 'mercator'
+      projection: {name: 'mercator'} as mapboxgl.Projection
     });
     
     // Add navigation controls
